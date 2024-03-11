@@ -23,12 +23,12 @@ class Follower extends Model
         'deleted_at'
     ];
 
-    public function followerUser()
+    public function follower()
     {
         return $this->belongsTo(User::class, 'follower_user_id');
     }
 
-    public function followingUser()
+    public function following()
     {
         return $this->belongsTo(User::class, 'following_user_id');
     }

@@ -38,3 +38,14 @@ Route::controller(\App\Http\Controllers\PostController::class)->group(function (
         });
     });
 });
+
+/* Followers */
+Route::controller(\App\Http\Controllers\FollowerController::class)->group(function () {
+    Route::get('search', 'search');
+    Route::middleware('auth:api')->group(function () {
+        Route::get('/following', 'following');
+        Route::get('/followers', 'followers');
+        Route::post('/follow/{user}', 'follow');
+    });
+});
+
