@@ -33,6 +33,7 @@ Route::controller(\App\Http\Controllers\Auth\AuthController::class)->group(funct
 Route::controller(\App\Http\Controllers\PostController::class)->group(function () {
     Route::prefix('post')->group(function () {
         Route::get('all', 'index');
+        Route::get('user', 'index');
         Route::middleware('auth:api')->group(function () {
             Route::post('upload','store');
             Route::delete('{post}', 'destroy');
