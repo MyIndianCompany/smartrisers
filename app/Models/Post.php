@@ -19,10 +19,15 @@ class Post extends Model
      */
     protected $fillable = [
         'user_id',
+        'caption',
         'original_file_name',
         'file_url',
+        'public_id',
+        'file_size',
+        'file_type',
         'mime_type',
-        'caption',
+        'width',
+        'height',
         'like_count',
         'comment_count',
         'created_at',

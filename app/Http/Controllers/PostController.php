@@ -28,34 +28,35 @@ class PostController extends Controller
         $request->validate([
             'file' => 'required|mimes:mp4,mov,avi|max:102400',
         ]);
-
         $uploadedFile = $request->file('file');
         try {
             DB::beginTransaction();
             $originalFileName = $uploadedFile->getClientOriginalName();
-            $uploadedVideo = Cloudinary::uploadVideo($uploadedFile->getRealPath());
-            $videoUrl = $uploadedVideo->getSecurePath();
-            $publicId = $uploadedVideo->getPublicId();
-            $fileSize = $uploadedVideo->getSize();
-            $fileType = $uploadedVideo->getFileType();
-            $width = $uploadedVideo->getWidth();
-            $height = $uploadedVideo->getHeight();
-
+            $uploadedVideo    = Cloudinary::uploadVideo($uploadedFile->getRealPath());
+            $videoUrl         = $uploadedVideo->getSecurePath();
+            $publicId         = $uploadedVideo->getPublicId();
+            $fileSize         = $uploadedVideo->getSize();
+            $fileType         = $uploadedVideo->getFileType();
+            $width            = $uploadedVideo->getWidth();
+            $height           = $uploadedVideo->getHeight();
             if (!$uploadedFile) {
                 throw new BbyteException('File not found!');
             }
             $user = auth()->user()->id;
             Post::create([
                 'user_id'            => $user,
+                'caption'            => $request->input('caption'),
                 'original_file_name' => $originalFileName,
                 'file_url'           => $videoUrl,
+                'public_id'          => $publicId,
+                'file_size'          => $fileSize,
+                'file_type'          => $fileType,
                 'mime_type'          => $uploadedFile->getMimeType(),
-                'caption'            => $request->input('caption')
+                'width'              => $width,
+                'height'             => $height,
             ]);
             DB::commit();
-            return response()->json([
-                'success' => 'Your post has been successfully uploaded!'
-            ], 201);
+            return response()->json(['success' => 'Your post has been successfully uploaded!'], 201);
         } catch (\Exception $exception) {
             DB::rollBack();
             report($exception);
@@ -87,6 +88,20 @@ class PostController extends Controller
      */
     public function destroy(Post $post)
     {
-        //
+        try {
+            if ($post->user_id !== auth()->user()->id) {
+                return response()->json(['message' => 'You are not authorized to delete this post.'], 403);
+            }
+            Cloudinary::destroy($post->public_id);
+            $post->delete();
+            return response()->json(['success' => 'Post deleted successfully.'], 201);
+        } catch (\Exception $exception) {
+            report($exception);
+            return response()->json([
+                'message' => 'Failed to delete the post. Please try again later.',
+                'error' => $exception->getMessage()
+            ], 422);
+        }
     }
+
 }

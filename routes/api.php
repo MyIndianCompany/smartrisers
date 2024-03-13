@@ -35,6 +35,7 @@ Route::controller(\App\Http\Controllers\PostController::class)->group(function (
         Route::get('all', 'index');
         Route::middleware('auth:api')->group(function () {
             Route::post('upload','store');
+            Route::delete('{post}', 'destroy');
         });
     });
 });

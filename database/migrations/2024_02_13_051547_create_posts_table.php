@@ -14,10 +14,15 @@ return new class extends Migration
         Schema::create('posts', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id');
+            $table->longText('caption')->nullable();
             $table->string('original_file_name');
             $table->string('file_url');
+            $table->string('public_id');
+            $table->string('file_size');
+            $table->string('file_type');
             $table->string('mime_type');
-            $table->longText('caption')->nullable();
+            $table->string('width');
+            $table->string('height');
             $table->integer('like_count')->default(0);
             $table->integer('comment_count')->default(0);
 
