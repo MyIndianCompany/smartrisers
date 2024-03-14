@@ -20,9 +20,9 @@ class PostController extends Controller
         return Post::inRandomOrder()->get();
     }
 
-    public function getUserPost()
+    public function getUserPost(Request $request)
     {
-        $userId = request()->input('user_id');
+        $userId = $request['user_id'];
         $posts = Post::where('user_id', $userId)->get();
         return response()->json(['posts' => $posts], 201);
     }
