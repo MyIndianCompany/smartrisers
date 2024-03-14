@@ -27,6 +27,13 @@ class PostController extends Controller
         return response()->json(['posts' => $posts], 201);
     }
 
+    public function getAuthUserPost()
+    {
+        $userId = auth()->user()->id;
+        $posts = Post::where('user_id', $userId)->get();
+        return response()->json(['posts' => $posts], 201);
+    }
+
     /**
      * Store a newly created resource in storage.
      */

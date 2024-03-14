@@ -35,6 +35,7 @@ Route::controller(\App\Http\Controllers\PostController::class)->group(function (
         Route::get('all', 'index');
         Route::get('user', 'getUserPost');
         Route::middleware('auth:api')->group(function () {
+            Route::get('auth/user', 'getAuthUserPost');
             Route::post('upload','store');
             Route::delete('{post}', 'destroy');
         });
