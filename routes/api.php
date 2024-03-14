@@ -33,10 +33,10 @@ Route::controller(\App\Http\Controllers\Auth\AuthController::class)->group(funct
 Route::controller(\App\Http\Controllers\PostController::class)->group(function () {
     Route::prefix('post')->group(function () {
         Route::get('all', 'index');
-        Route::get('user', 'getUserPost');
         Route::middleware('auth:api')->group(function () {
-            Route::get('auth/user', 'getAuthUserPost');
+            Route::get('user', 'getPosts');
             Route::post('upload','store');
+            Route::post('{post}/like', 'like');
             Route::delete('{post}', 'destroy');
         });
     });

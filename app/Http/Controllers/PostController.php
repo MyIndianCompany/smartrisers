@@ -20,17 +20,15 @@ class PostController extends Controller
         return Post::inRandomOrder()->get();
     }
 
-    public function getUserPost(Request $request)
+    public function getPosts(Request $request)
     {
-        $userId = $request['user_id'];
-        $posts = Post::where('user_id', $userId)->get();
-        return response()->json(['posts' => $posts], 201);
-    }
-
-    public function getAuthUserPost()
-    {
-        $userId = auth()->user()->id;
-        $posts = Post::where('user_id', $userId)->get();
+        $user = auth()->user();
+        $userId = $request->input('user_id', $user->id);
+        $posts = Post::where('user_id', $userId)->inRandomOrder()->get();
+        $user->load('likes');
+        $posts->each(function ($post) use ($user) {
+            $post->liked = $user->likes->contains('post_id', $post->id);
+        });
         return response()->json(['posts' => $posts], 201);
     }
 
@@ -117,5 +115,23 @@ class PostController extends Controller
             ], 422);
         }
     }
-
+    public function like(Post $post)
+    {
+        try {
+            DB::beginTransaction();
+            $user = auth()->user();
+            $like = $user->likes()->where('post_id', $post->id)->first();
+            $like ? $like->delete() : $user->likes()->create(['post_id' => $post->id]);
+            $post->update(['like_count' => $post->likes()->count()]);
+            DB::commit();
+            return response()->json(['message' => 'Post liked successfully.'], 201);
+        } catch (\Exception $exception) {
+            DB::rollBack();
+            report($exception);
+            return response()->json([
+                'message' => 'Failed to like the post. Please try again later.',
+                'error' => $exception->getMessage()
+            ], 401);
+        }
+    }
 }
