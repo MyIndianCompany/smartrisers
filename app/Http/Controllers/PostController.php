@@ -45,6 +45,21 @@ class PostController extends Controller
         return response()->json(['posts' => $posts], 201);
     }
 
+    public function getPostsByAuthUsers(Request $request)
+    {
+        $user = auth()->user();
+        $posts = Post::inRandomOrder()->with('comments.user', 'comments.replies.user', 'comments.replies.replies.user', 'comments.replies.replies.replies.user')->get();
+
+        $posts->each(function ($post) {
+            $post->comment_count = $post->comments->count();
+            $post->reply_count = $post->comments->flatMap->replies->count();
+            $post->nested_reply_count = $post->comments->flatMap->replies->flatMap->replies->count();
+            $post->liked = $post->likes->contains('user_id', auth()->id());
+        });
+
+        return response()->json(['posts' => $posts], 201);
+    }
+
     public function getPosts(Request $request)
     {
         $user = auth()->user();

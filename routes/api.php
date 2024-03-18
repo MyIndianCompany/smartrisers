@@ -35,6 +35,7 @@ Route::controller(\App\Http\Controllers\PostController::class)->group(function (
         Route::get('all', 'index');
         Route::middleware('auth:api')->group(function () {
             Route::get('user', 'getPosts');
+            Route::get('auth/user', 'getPostsByAuthUsers');
             Route::post('upload','store');
             Route::post('{post}/like', 'like');
             Route::post('{post}/comment', 'comment');
