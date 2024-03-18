@@ -189,6 +189,7 @@ class PostController extends Controller
             $like = $user->likes()->where('post_id', $post->id)->first();
 
             if ($like) {
+                Log::info('Deleted_at value: ' . $like->deleted_at);
                 if ($like->deleted_at != null) {
                     $like->update(['deleted_at' => null]);
                     Log::info('Restored existing Like');
