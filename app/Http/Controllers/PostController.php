@@ -191,7 +191,7 @@ class PostController extends Controller
 
             if ($like && $like->deleted_at === null) {
                 $like->delete();
-            } elseif ($like && $like->deleted_at != null) {
+            } elseif ($like && empty($like->deleted_at)) {
                 $user->likes()->update(['deleted_at', '=', null]);
             } else {
                 $user->likes()->create(['post_id' => $post->id]);
