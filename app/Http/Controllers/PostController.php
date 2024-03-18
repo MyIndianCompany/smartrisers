@@ -10,7 +10,6 @@ use App\Models\PostCommentReply;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class PostController extends Controller
@@ -180,28 +179,13 @@ class PostController extends Controller
             ], 422);
         }
     }
-
     public function like(Post $post)
     {
         try {
             DB::beginTransaction();
             $user = auth()->user();
             $like = $user->likes()->where('post_id', $post->id)->first();
-
-            if ($like) {
-                Log::info('Deleted_at value: ' . $like->deleted_at);
-                if ($like->deleted_at !== null && $like->deleted_at !== '') {
-                    $like->update(['deleted_at' => null]);
-                    Log::info('Restored existing Like');
-                } else {
-                    $like->delete();
-                    Log::info('Deleted existing Like');
-                }
-            } else {
-                $user->likes()->create(['post_id' => $post->id]);
-                Log::info('Add new Like');
-            }
-
+            $like ? $like->delete() : $user->likes()->create(['post_id' => $post->id]);
             $post->update(['like_count' => $post->likes()->count()]);
             DB::commit();
             return response()->json(['message' => 'Post liked successfully.'], 201);
