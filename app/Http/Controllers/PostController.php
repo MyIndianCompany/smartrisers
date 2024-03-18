@@ -16,9 +16,7 @@ class PostController extends Controller
 {
     public function index()
     {
-        $user = auth()->user();
         $posts = Post::inRandomOrder()->get();
-        $user->load('likes');
 
         $posts->load([
             'comments' => function ($query) {
