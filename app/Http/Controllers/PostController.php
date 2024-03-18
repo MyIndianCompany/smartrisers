@@ -16,42 +16,35 @@ class PostController extends Controller
 {
     public function index()
     {
-        return Post::inRandomOrder()->get();
-    }
+        $posts = Post::inRandomOrder()->get();
+        $posts->load('likes');
 
-//    public function getPosts(Request $request)
-//    {
-//        $user = auth()->user();
-//        $userId = $request->input('user_id', $user->id);
-//        $posts = Post::where('user_id', $userId)->inRandomOrder()->get();
-//        $user->load('likes');
-//        $posts->load([
-//            'comments' => function ($query) {
-//                $query->whereNull('super_comment_id');
-//            },
-//            'comments.user' => function ($query) {
-//                $query->select('id', 'name', 'username');
-//            },
-//            'comments.replies.user' => function ($query) {
-//                $query->select('id', 'name', 'username');
-//            },
-//            'comments.replies.replies.user' => function ($query) {
-//                $query->select('id', 'name', 'username');
-//            }
-//        ]);
-//
-//        $posts->each(function ($post) {
-//            $post->comment_count = $post->comments->count();
-//            $post->reply_count = $post->comments->flatMap->replies->count();
-//            $post->nested_reply_count = $post->comments->flatMap->replies->flatMap->replies->count();
-//        });
-//
-//        $posts->each(function ($post) use ($user) {
-//            $post->liked = $user->likes->contains('post_id', $post->id);
-//        });
-//
-//        return response()->json(['posts' => $posts], 201);
-//    }
+        $posts->load([
+            'comments' => function ($query) {
+                $query->whereNull('super_comment_id');
+            },
+            'comments.user' => function ($query) {
+                $query->select('id', 'name', 'username');
+            },
+            'comments.replies.user' => function ($query) {
+                $query->select('id', 'name', 'username');
+            },
+            'comments.replies.replies.user' => function ($query) {
+                $query->select('id', 'name', 'username');
+            },
+            'comments.replies.replies.replies.user' => function ($query) {
+                $query->select('id', 'name', 'username');
+            }
+        ]);
+
+        $posts->each(function ($post) {
+            $post->comment_count = $post->comments->count();
+            $post->reply_count = $post->comments->flatMap->replies->count();
+            $post->nested_reply_count = $post->comments->flatMap->replies->flatMap->replies->count();
+        });
+
+        return response()->json(['posts' => $posts], 201);
+    }
 
     public function getPosts(Request $request)
     {
