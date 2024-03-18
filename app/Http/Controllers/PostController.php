@@ -189,12 +189,20 @@ class PostController extends Controller
 //            $like ? ($like->deleted_at ? $like->update(['deleted_at' => null]) : $like->delete()) : ($like->deleted_at != null ? $like->update(['deleted_at' => null]) : $user->likes()->create(['post_id' => $post->id]));
 //            $like ? ($like->deleted_at ? $like->update(['deleted_at' => null]) : $like->delete()) : ($like && $like->deleted_at !== null ? $like->update(['deleted_at' => null]) : $user->likes()->create(['post_id' => $post->id]));
 
+//            if ($like && $like->deleted_at === null) {
+//                $like->delete();
+//            } elseif ($like && empty($like->deleted_at)) {
+//                $user->likes()->update(['deleted_at', '=', null]);
+//            } else {
+//                $user->likes()->create(['post_id' => $post->id]);
+//            }
+
             if ($like && $like->deleted_at === null) {
-                $like->delete();
-            } elseif ($like && empty($like->deleted_at)) {
-                $user->likes()->update(['deleted_at', '=', null]);
+                $like->delete(); // Soft delete the like
+            } elseif ($like && $like->deleted_at !== null) {
+                $like->restore(); // Restore the like
             } else {
-                $user->likes()->create(['post_id' => $post->id]);
+                $user->likes()->create(['post_id' => $post->id]); // Create a new like
             }
 
             $post->update(['like_count' => $post->likes()->count()]);
