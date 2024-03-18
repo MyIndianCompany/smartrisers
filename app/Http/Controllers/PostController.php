@@ -186,16 +186,6 @@ class PostController extends Controller
             DB::beginTransaction();
             $user = auth()->user();
             $like = $user->likes()->where('post_id', $post->id)->first();
-//            $like ? ($like->deleted_at ? $like->update(['deleted_at' => null]) : $like->delete()) : ($like->deleted_at != null ? $like->update(['deleted_at' => null]) : $user->likes()->create(['post_id' => $post->id]));
-//            $like ? ($like->deleted_at ? $like->update(['deleted_at' => null]) : $like->delete()) : ($like && $like->deleted_at !== null ? $like->update(['deleted_at' => null]) : $user->likes()->create(['post_id' => $post->id]));
-
-//            if ($like && $like->deleted_at === null) {
-//                $like->delete();
-//            } elseif ($like && empty($like->deleted_at)) {
-//                $user->likes()->update(['deleted_at', '=', null]);
-//            } else {
-//                $user->likes()->create(['post_id' => $post->id]);
-//            }
 
             if ($like && $like->deleted_at === null) {
                 $like->delete(); // Soft delete the like
@@ -217,7 +207,6 @@ class PostController extends Controller
             ], 401);
         }
     }
-
 
     public function comment(Request $request, Post $post)
     {
