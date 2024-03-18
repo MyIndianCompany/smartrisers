@@ -187,7 +187,16 @@ class PostController extends Controller
             $user = auth()->user();
             $like = $user->likes()->where('post_id', $post->id)->first();
 //            $like ? ($like->deleted_at ? $like->update(['deleted_at' => null]) : $like->delete()) : ($like->deleted_at != null ? $like->update(['deleted_at' => null]) : $user->likes()->create(['post_id' => $post->id]));
-            $like ? ($like->deleted_at ? $like->update(['deleted_at' => null]) : $like->delete()) : ($like && $like->deleted_at !== null ? $like->update(['deleted_at' => null]) : $user->likes()->create(['post_id' => $post->id]));
+//            $like ? ($like->deleted_at ? $like->update(['deleted_at' => null]) : $like->delete()) : ($like && $like->deleted_at !== null ? $like->update(['deleted_at' => null]) : $user->likes()->create(['post_id' => $post->id]));
+
+            if ($like && $like->deleted_at === null) {
+                $like->delete();
+            } elseif ($like && $like->deleted_at != null) {
+                $user->likes()->update(['deleted_at', '=', null]);
+            } else {
+                $user->likes()->create(['post_id' => $post->id]);
+            }
+
             $post->update(['like_count' => $post->likes()->count()]);
             DB::commit();
             return response()->json(['message' => 'Post liked successfully.'], 201);
