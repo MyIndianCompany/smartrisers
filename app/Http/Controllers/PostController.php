@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Common\Constant\Constants;
 use App\Exceptions\CustomException\BbyteException;
 use App\Models\Post;
+use App\Models\PostComment;
+use App\Models\PostCommentReply;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -12,13 +14,44 @@ use Illuminate\Support\Facades\Storage;
 
 class PostController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
         return Post::inRandomOrder()->get();
     }
+
+//    public function getPosts(Request $request)
+//    {
+//        $user = auth()->user();
+//        $userId = $request->input('user_id', $user->id);
+//        $posts = Post::where('user_id', $userId)->inRandomOrder()->get();
+//        $user->load('likes');
+//        $posts->load([
+//            'comments' => function ($query) {
+//                $query->whereNull('super_comment_id');
+//            },
+//            'comments.user' => function ($query) {
+//                $query->select('id', 'name', 'username');
+//            },
+//            'comments.replies.user' => function ($query) {
+//                $query->select('id', 'name', 'username');
+//            },
+//            'comments.replies.replies.user' => function ($query) {
+//                $query->select('id', 'name', 'username');
+//            }
+//        ]);
+//
+//        $posts->each(function ($post) {
+//            $post->comment_count = $post->comments->count();
+//            $post->reply_count = $post->comments->flatMap->replies->count();
+//            $post->nested_reply_count = $post->comments->flatMap->replies->flatMap->replies->count();
+//        });
+//
+//        $posts->each(function ($post) use ($user) {
+//            $post->liked = $user->likes->contains('post_id', $post->id);
+//        });
+//
+//        return response()->json(['posts' => $posts], 201);
+//    }
 
     public function getPosts(Request $request)
     {
@@ -26,15 +59,40 @@ class PostController extends Controller
         $userId = $request->input('user_id', $user->id);
         $posts = Post::where('user_id', $userId)->inRandomOrder()->get();
         $user->load('likes');
+
+        $posts->load([
+            'comments' => function ($query) {
+                $query->whereNull('super_comment_id');
+            },
+            'comments.user' => function ($query) {
+                $query->select('id', 'name', 'username');
+            },
+            'comments.replies.user' => function ($query) {
+                $query->select('id', 'name', 'username');
+            },
+            'comments.replies.replies.user' => function ($query) {
+                $query->select('id', 'name', 'username');
+            },
+            'comments.replies.replies.replies.user' => function ($query) {
+                $query->select('id', 'name', 'username');
+            }
+        ]);
+
+        $posts->each(function ($post) {
+            $post->comment_count = $post->comments->count();
+            $post->reply_count = $post->comments->flatMap->replies->count();
+            $post->nested_reply_count = $post->comments->flatMap->replies->flatMap->replies->count();
+        });
+
         $posts->each(function ($post) use ($user) {
             $post->liked = $user->likes->contains('post_id', $post->id);
         });
+
         return response()->json(['posts' => $posts], 201);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
+
+
     public function store(Request $request)
     {
         $request->validate([
@@ -79,25 +137,6 @@ class PostController extends Controller
         }
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Post $post)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Post $post)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Post $post)
     {
         try {
@@ -130,6 +169,61 @@ class PostController extends Controller
             report($exception);
             return response()->json([
                 'message' => 'Failed to like the post. Please try again later.',
+                'error' => $exception->getMessage()
+            ], 401);
+        }
+    }
+
+    public function comment(Request $request, Post $post)
+    {
+        $request->validate([
+            'comment' => 'required|string|max:255',
+        ]);
+
+        try {
+            DB::beginTransaction();
+            $user = auth()->user();
+            PostComment::create([
+                'post_id' => $post->id,
+                'user_id' => $user->id,
+                'comment' => $request->input('comment')
+            ]);
+            $post->update(['comment_count' => $post->comments()->count()]);
+            DB::commit();
+            return response()->json(['message' => 'Comment added successfully.'], 201);
+        } catch (\Exception $exception) {
+            DB::rollBack();
+            report($exception);
+            return response()->json([
+                'message' => 'Failed to add comment. Please try again later.',
+                'error' => $exception->getMessage()
+            ], 401);
+        }
+    }
+
+    //Comment Reply
+    public function reply(Request $request, Post $post, PostComment $comment)
+    {
+        $request->validate([
+            'comment' => 'required|string|max:255',
+        ]);
+
+        try {
+            DB::beginTransaction();
+            $user = auth()->user();
+            $reply = PostComment::create([
+                'post_id' => $post->id,
+                'user_id' => $user->id,
+                'super_comment_id' => $comment->id,
+                'comment' => $request->input('comment')
+            ]);
+            DB::commit();
+            return response()->json(['message' => 'Comment reply added successfully.', 'reply' => $reply], 201);
+        } catch (\Exception $exception) {
+            DB::rollBack();
+            report($exception);
+            return response()->json([
+                'message' => 'Failed to add comment reply. Please try again later.',
                 'error' => $exception->getMessage()
             ], 401);
         }

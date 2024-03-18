@@ -36,4 +36,9 @@ class PostComment extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
+
+    public function replies()
+    {
+        return $this->hasMany(PostComment::class, 'super_comment_id');
+    }
 }
