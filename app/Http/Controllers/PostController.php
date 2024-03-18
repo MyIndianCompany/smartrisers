@@ -190,7 +190,7 @@ class PostController extends Controller
 
             if ($like) {
                 Log::info('Deleted_at value: ' . $like->deleted_at);
-                if ($like->deleted_at != null) {
+                if (!empty($like->deleted_at)) {
                     $like->update(['deleted_at' => null]);
                     Log::info('Restored existing Like');
                 } else {
