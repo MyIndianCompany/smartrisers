@@ -187,12 +187,14 @@ class PostController extends Controller
             $user = auth()->user();
             $like = $user->likes()->where('post_id', $post->id)->first();
 
-            if ($like && $like->deleted_at === null) {
-                $like->delete(); // Soft delete the like
-            } elseif ($like && $like->deleted_at !== null) {
-                $like->restore(); // Restore the like
+            if ($like) {
+                if ($like->deleted_at != null) {
+                    $like->update(['deleted_at' => null]);
+                } else {
+                    $like->delete();
+                }
             } else {
-                $user->likes()->create(['post_id' => $post->id]); // Create a new like
+                $user->likes()->create(['post_id' => $post->id]);
             }
 
             $post->update(['like_count' => $post->likes()->count()]);
