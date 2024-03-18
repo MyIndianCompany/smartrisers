@@ -48,7 +48,23 @@ class PostController extends Controller
     public function getPostsByAuthUsers(Request $request)
     {
         $posts = Post::inRandomOrder()
-            ->with('comments.user', 'comments.replies.user', 'comments.replies.replies.user', 'comments.replies.replies.replies.user')
+            ->with([
+                'comments' => function ($query) {
+                    $query->whereNull('super_comment_id');
+                },
+                'comments.user' => function ($query) {
+                    $query->select('id', 'name', 'username');
+                },
+                'comments.replies.user' => function ($query) {
+                    $query->select('id', 'name', 'username');
+                },
+                'comments.replies.replies.user' => function ($query) {
+                    $query->select('id', 'name', 'username');
+                },
+                'comments.replies.replies.replies.user' => function ($query) {
+                    $query->select('id', 'name', 'username');
+                }
+            ])
             ->get();
 
         $posts->each(function ($post) {
