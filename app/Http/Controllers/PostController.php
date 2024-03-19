@@ -44,6 +44,41 @@ class PostController extends Controller
 
         return response()->json(['posts' => $posts], 201);
     }
+    public function getPostsByUserId(Request $request)
+    {
+        $user_id = $request->input('user_id');
+        $posts = Post::where('user_id', $user_id)->inRandomOrder()
+            ->with([
+                'comments' => function ($query) {
+                    $query->whereNull('super_comment_id');
+                },
+                'comments.user' => function ($query) {
+                    $query->select('id', 'name', 'username');
+                },
+                'comments.replies.user' => function ($query) {
+                    $query->select('id', 'name', 'username');
+                },
+                'comments.replies.replies.user' => function ($query) {
+                    $query->select('id', 'name', 'username');
+                },
+                'comments.replies.replies.replies.user' => function ($query) {
+                    $query->select('id', 'name', 'username');
+                }
+            ])
+            ->get();
+
+        $posts->each(function ($post) {
+            $post->comment_count = $post->comments->count();
+            $post->reply_count = $post->comments->flatMap->replies->count();
+            $post->nested_reply_count = $post->comments->flatMap->replies->flatMap->replies->count();
+            if (auth()) {
+                $post->liked = $post->likes->contains('user_id', auth()->id());
+            }
+            unset($post->likes); // Remove the likes array from the post object
+        });
+
+        return response()->json(['posts' => $posts], 201);
+    }
 
     public function getPostsByAuthUsers(Request $request)
     {
