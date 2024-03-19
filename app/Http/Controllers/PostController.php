@@ -44,10 +44,9 @@ class PostController extends Controller
 
         return response()->json(['posts' => $posts], 201);
     }
-    public function getPostsByUserId(Request $request)
+    public function getPostsByUserId(Request $request, $userId)
     {
-        $user_id = $request->input('user_id');
-        $posts = Post::where('user_id', $user_id)->inRandomOrder()
+        $posts = Post::where('user_id', $userId)->inRandomOrder()
             ->with([
                 'comments' => function ($query) {
                     $query->whereNull('super_comment_id');
