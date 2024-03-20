@@ -109,7 +109,7 @@ class PostController extends Controller
                 ->get();
 
             $followedUserIds = Follower::where('following_user_id', $authUserId)
-                ->pluck('follower_user_id')
+                ->pluck('following_user_id')
                 ->toArray();
 
             $posts->each(function ($post) use ($authUserId, $followedUserIds) {
