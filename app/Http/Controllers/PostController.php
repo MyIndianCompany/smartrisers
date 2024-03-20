@@ -82,46 +82,56 @@ class PostController extends Controller
 
     public function getPostsByAuthUsers(Request $request)
     {
-        $authUserId = auth()->id();
+        try {
+            $authUserId = auth()->id();
 
-        $posts = Post::inRandomOrder()
-            ->with([
-                'user',
-                'comments' => function ($query) {
-                    $query->whereNull('super_comment_id');
-                },
-                'comments.user' => function ($query) {
-                    $query->select('id', 'name', 'username');
-                },
-                'comments.replies.user' => function ($query) {
-                    $query->select('id', 'name', 'username');
-                },
-                'comments.replies.replies.user' => function ($query) {
-                    $query->select('id', 'name', 'username');
-                },
-                'comments.replies.replies.replies.user' => function ($query) {
-                    $query->select('id', 'name', 'username');
-                },
-                'likes'
-            ])
-            ->get();
+            $posts = Post::inRandomOrder()
+                ->with([
+                    'user',
+                    'comments' => function ($query) {
+                        $query->whereNull('super_comment_id');
+                    },
+                    'comments.user' => function ($query) {
+                        $query->select('id', 'name', 'username');
+                    },
+                    'comments.replies.user' => function ($query) {
+                        $query->select('id', 'name', 'username');
+                    },
+                    'comments.replies.replies.user' => function ($query) {
+                        $query->select('id', 'name', 'username');
+                    },
+                    'comments.replies.replies.replies.user' => function ($query) {
+                        $query->select('id', 'name', 'username');
+                    },
+                    'likes'
+                ])
+                ->get();
 
-        $followedUserIds = Follower::where('follower_id', $authUserId)
-            ->pluck('user_id')
-            ->toArray();
+            $followedUserIds = Follower::where('follower_id', $authUserId)
+                ->pluck('user_id')
+                ->toArray();
 
-        $posts->each(function ($post) use ($authUserId, $followedUserIds) {
-            $post->comment_count = $post->comments->count();
-            $post->reply_count = $post->comments->flatMap->replies->count();
-            $post->nested_reply_count = $post->comments->flatMap->replies->flatMap->replies->count();
-            $post->liked = $post->likes->contains('user_id', $authUserId);
-            $post->followed = in_array($post->user_id, $followedUserIds);
-            $post->is_owner = $post->user_id === $authUserId;
-            unset($post->likes); // Remove the likes array from the post object
-            unset($post->user->followers); // Remove the followers array from the user object
-        });
+            $posts->each(function ($post) use ($authUserId, $followedUserIds) {
+                $post->comment_count = $post->comments->count();
+                $post->reply_count = $post->comments->flatMap->replies->count();
+                $post->nested_reply_count = $post->comments->flatMap->replies->flatMap->replies->count();
+                $post->liked = $post->likes->contains('user_id', $authUserId);
+                $post->followed = in_array($post->user_id, $followedUserIds);
+                $post->is_owner = $post->user_id === $authUserId;
+                unset($post->likes); // Remove the likes array from the post object
+                unset($post->user->followers); // Remove the followers array from the user object
+            });
 
-        return response()->json(['posts' => $posts], 201);
+            return response()->json(['posts' => $posts], 201);
+        } catch (\Exception $exception) {
+            report($exception);
+            return response()->json([
+                'message' => 'Fail',
+                'error' => $exception->getMessage(),
+                'code' => $exception->getCode(),
+                'line' => $exception->getLine()
+            ]);
+        }
     }
 
     public function getPosts(Request $request)
