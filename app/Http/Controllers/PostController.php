@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Common\Constant\Constants;
-use App\Exceptions\CustomException\BbyteException;
 use App\Models\Follower;
 use App\Models\Post;
 use App\Models\PostComment;
@@ -11,7 +9,6 @@ use App\Services\Posts\PostServices;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 
 class PostController extends Controller
