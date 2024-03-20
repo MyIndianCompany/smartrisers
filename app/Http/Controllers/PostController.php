@@ -109,7 +109,7 @@ class PostController extends Controller
                 ->get();
 
             $followedUserIds = Follower::where('follower_user_id', $authUserId)
-                ->pluck('follower_user_id') // Assuming 'followed_id' is the correct column name
+                ->pluck('follower_user_id')
                 ->toArray();
 
             $posts->each(function ($post) use ($authUserId, $followedUserIds) {
@@ -117,10 +117,10 @@ class PostController extends Controller
                 $post->reply_count = $post->comments->flatMap->replies->count();
                 $post->nested_reply_count = $post->comments->flatMap->replies->flatMap->replies->count();
                 $post->liked = $post->likes->contains('user_id', $authUserId);
-                $post->followed = in_array($post->user_id, $followedUserIds);
+                $post->followed = $post->user_id === $followedUserIds;
                 $post->is_owner = $post->user_id === $authUserId;
-                unset($post->likes); // Remove the likes array from the post object
-                unset($post->user->followers); // Remove the followers array from the user object
+                unset($post->likes);
+                unset($post->user->followers);
             });
 
             return response()->json(['posts' => $posts], 201);
