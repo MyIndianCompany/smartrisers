@@ -81,6 +81,7 @@ class PostController extends Controller
 
     public function getPostsByAuthUsers(Request $request)
     {
+        $authUserId = auth()->user()->id;
         $posts = Post::inRandomOrder()
             ->with([
                 'comments' => function ($query) {
@@ -101,11 +102,13 @@ class PostController extends Controller
             ])
             ->get();
 
-        $posts->each(function ($post) {
+        $posts->each(function ($post) use ($authUserId) {
             $post->comment_count = $post->comments->count();
             $post->reply_count = $post->comments->flatMap->replies->count();
             $post->nested_reply_count = $post->comments->flatMap->replies->flatMap->replies->count();
             $post->liked = $post->likes->contains('user_id', auth()->id());
+            $post->followed = $post->user->followers->contains('follower_user_id', $authUserId);
+            $post->is_owner = $post->user->id === $authUserId;
             unset($post->likes); // Remove the likes array from the post object
         });
 
