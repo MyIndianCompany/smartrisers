@@ -265,8 +265,8 @@ class PostController extends Controller
         try {
             DB::beginTransaction();
             $user = auth()->user();
-            $like = $user->likes()->where('comment_id', $postComment->id)->first();
-            $like ? $like->delete() : $user->likes()->create(['comment_id' => $postComment->id]);
+            $commentLikes = $user->commentLikes()->where('comment_id', $postComment->id)->first();
+            $commentLikes ? $commentLikes->delete() : $user->commentLikes()->create(['comment_id' => $postComment->id]);
             $postComment->update(['comment_like_count' => $postComment->likes()->count()]);
             DB::commit();
             return response()->json(['message' => 'Post Comment liked successfully.'], 201);
