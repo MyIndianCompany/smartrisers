@@ -296,6 +296,7 @@ class PostController extends Controller
                 'super_comment_id' => $comment->id,
                 'comment' => $request->input('comment')
             ]);
+            $comment->update(['comment_reply_count' => $comment->replies()->count()]);
             DB::commit();
             return response()->json(['message' => 'Comment reply added successfully.', 'reply' => $reply], 201);
         } catch (\Exception $exception) {
