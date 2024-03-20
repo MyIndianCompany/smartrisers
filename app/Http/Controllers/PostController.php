@@ -87,7 +87,6 @@ class PostController extends Controller
 
             $posts = Post::inRandomOrder()
                 ->with([
-                    'user',
                     'comments' => function ($query) {
                         $query->whereNull('super_comment_id');
                     },
@@ -103,7 +102,6 @@ class PostController extends Controller
                     'comments.replies.replies.replies.user' => function ($query) {
                         $query->select('id', 'name', 'username');
                     },
-                    'likes'
                 ])
                 ->get();
 
