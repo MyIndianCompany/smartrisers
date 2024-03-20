@@ -123,7 +123,7 @@ class PostController extends Controller
                 // unset($post->user->followers); // No need to unset followers here
             });
 
-            return response()->json(['posts' => $posts], 201);
+            return response()->json($posts, 201);
         } catch (\Exception $exception) {
             report($exception);
             return response()->json([
