@@ -8,40 +8,41 @@ use App\Models\PostComment;
 use App\Services\Posts\PostServices;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class PostController extends Controller
 {
-    protected $postService;
+    protected PostServices $postServices;
 
-    public function __construct(PostServices $postService)
+    public function __construct(PostServices $postServices)
     {
-        $this->postService = $postService;
+        $this->postServices = $postServices;
     }
 
     public function index()
     {
-        $posts = $this->postService->getPostsQuery()->get();
+        $posts = $this->postServices->getPostsQuery()->get();
         return response()->json($posts, 201);
     }
 
-    public function getPostsByUserId(Request $request, $userId)
+    public function getPostsByUserId($userId): \Illuminate\Http\JsonResponse
     {
-        $posts = $this->postService->getPostsQuery()
+        $posts = $this
+            ->postServices
+            ->getPostsQuery()
             ->where('user_id', $userId)
             ->get();
         return response()->json($posts, 201);
     }
 
-    public function getPostsByAuthUsers(Request $request)
+    public function getPostsByAuthUsers(): \Illuminate\Http\JsonResponse
     {
         $authUserId = Auth::id();
         $followedUserIds = Follower::where('follower_user_id', $authUserId)
             ->pluck('following_user_id')
             ->toArray();
-
-        $posts = $this->postService->getPostsQuery()->get();
+        $posts = $this->postServices->getPostsQuery()->get();
         $posts->each(function ($post) use ($authUserId, $followedUserIds) {
             $post->comment_count = $post->comments->count();
             $post->reply_count = $post->comments->flatMap->replies->count();
@@ -49,30 +50,31 @@ class PostController extends Controller
             $post->liked = $post->likes->contains('user_id', $authUserId);
             $post->followed = in_array($post->user->id, $followedUserIds);
             $post->is_owner = $post->user->id === $authUserId;
-            unset($post->likes);
+            unset ($post->likes);
         });
-
         return response()->json($posts, 201);
     }
 
-    public function getPosts(Request $request)
+    public function getPosts(Request $request): \Illuminate\Http\JsonResponse
     {
         $user = Auth::user();
         $userId = $request->input('user_id', $user->id);
-        $posts = $this->postService->getPostsQuery()
+        $posts = $this
+            ->postServices
+            ->getPostsQuery()
             ->where('user_id', $userId)
             ->get();
         return response()->json($posts, 201);
     }
 
-    public function store(Request $request, PostServices $postService)
+    public function store(Request $request): \Illuminate\Http\JsonResponse
     {
         $request->validate([
             'file' => 'required|mimes:mp4,mov,avi|max:102400',
         ]);
         try {
             DB::beginTransaction();
-            $postService->uploadPost($request);
+            $this->postServices->uploadPost($request);
             DB::commit();
             return response()->json(['success' => 'Your post has been successfully uploaded!'], 201);
         } catch (\Exception $exception) {
@@ -85,7 +87,7 @@ class PostController extends Controller
         }
     }
 
-    public function destroy(Post $post)
+    public function destroy(Post $post): \Illuminate\Http\JsonResponse
     {
         try {
             if ($post->user_id !== auth()->user()->id) {
@@ -103,15 +105,14 @@ class PostController extends Controller
         }
     }
 
-    public function comment(Request $request, Post $post, PostServices $postService)
+    public function comment(Request $request, Post $post): \Illuminate\Http\JsonResponse
     {
         $request->validate([
             'comment' => 'required|string|max:255',
         ]);
-
         try {
-            $comment = $postService->addComment($post, $request->input('comment'));
-            return response()->json(['message' => 'Comment added successfully.', 'comment' => $comment], 201);
+            $this->postServices->addComment($post, $request->input('comment'));
+            return response()->json(['message' => 'Comment added successfully.'], 201);
         } catch (\Exception $exception) {
             report($exception);
             return response()->json([
@@ -121,15 +122,14 @@ class PostController extends Controller
         }
     }
 
-    public function reply(Request $request, Post $post, PostComment $comment, PostServices $postService)
+    public function reply(Request $request, Post $post, PostComment $comment): \Illuminate\Http\JsonResponse
     {
         $request->validate([
             'comment' => 'required|string|max:255',
         ]);
-
         try {
-            $reply = $postService->addReply($post, $comment, $request->input('comment'));
-            return response()->json(['message' => 'Comment reply added successfully.', 'reply' => $reply], 201);
+            $this->postServices->addReply($post, $comment, $request->input('comment'));
+            return response()->json(['message' => 'Comment reply added successfully.'], 201);
         } catch (\Exception $exception) {
             report($exception);
             return response()->json([
@@ -139,10 +139,10 @@ class PostController extends Controller
         }
     }
 
-    public function like(Post $post, PostServices $postService)
+    public function like(Post $post): \Illuminate\Http\JsonResponse
     {
         try {
-            $message = $postService->likePost($post);
+            $message = $this->postServices->likePost($post);
             return response()->json(['message' => $message], 201);
         } catch (\Exception $exception) {
             report($exception);
@@ -153,10 +153,10 @@ class PostController extends Controller
         }
     }
 
-    public function commentLike(PostComment $postComment, PostServices $postService)
+    public function commentLike(PostComment $postComment): \Illuminate\Http\JsonResponse
     {
         try {
-            $message = $postService->likePostComment($postComment);
+            $message = $this->postServices->likePostComment($postComment);
             return response()->json(['message' => $message], 201);
         } catch (\Exception $exception) {
             report($exception);
