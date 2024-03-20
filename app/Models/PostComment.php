@@ -17,6 +17,8 @@ class PostComment extends Model
         'user_id',
         'super_comment_id',
         'comment',
+        'comment_like_count',
+        'comment_reply_count',
         'created_at',
         'updated_at',
         'deleted_at',
@@ -40,5 +42,10 @@ class PostComment extends Model
     public function replies()
     {
         return $this->hasMany(PostComment::class, 'super_comment_id');
+    }
+
+    public function likes()
+    {
+        return $this->hasMany(PostCommentLike::class, 'comment_id');
     }
 }

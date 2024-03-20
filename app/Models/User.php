@@ -74,4 +74,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(PostLike::class, 'user_id');
     }
+
+    public function commentLikes(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(PostCommentLike::class, 'user_id');
+    }
 }
