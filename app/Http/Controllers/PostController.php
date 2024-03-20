@@ -87,6 +87,9 @@ class PostController extends Controller
 
             $posts = Post::inRandomOrder()
                 ->with([
+                    'user'=> function ($query) {
+                        $query->select('id', 'name', 'username');
+                    },
                     'comments' => function ($query) {
                         $query->whereNull('super_comment_id');
                     },
