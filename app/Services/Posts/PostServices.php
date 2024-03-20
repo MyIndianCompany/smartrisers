@@ -7,6 +7,7 @@ use App\Models\PostComment;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 
 class PostServices
 {
@@ -34,7 +35,7 @@ class PostServices
         ])->inRandomOrder();
     }
 
-    public function uploadPost($request)
+    public function uploadPost(Request $request, int $user_id)
     {
         $uploadedFile = $request->file('file');
         $originalFileName = $uploadedFile->getClientOriginalName();
@@ -47,16 +48,16 @@ class PostServices
         $height = $uploadedVideo->getHeight();
         $user = Auth::user();
         return Post::create([
-            'user_id' => $user,
-            'caption' => $request->input('caption'),
+            'user_id'            => $user_id,
+            'caption'            => $request->input('caption'),
             'original_file_name' => $originalFileName,
-            'file_url' => $videoUrl,
-            'public_id' => $publicId,
-            'file_size' => $fileSize,
-            'file_type' => $fileType,
-            'mime_type' => $uploadedFile->getMimeType(),
-            'width' => $width,
-            'height' => $height,
+            'file_url'           => $videoUrl,
+            'public_id'          => $publicId,
+            'file_size'          => $fileSize,
+            'file_type'          => $fileType,
+            'mime_type'          => $uploadedFile->getMimeType(),
+            'width'              => $width,
+            'height'             => $height,
         ]);
     }
 
