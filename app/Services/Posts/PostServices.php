@@ -3,7 +3,9 @@
 namespace App\Services\Posts;
 
 use App\Models\Post;
+use App\Models\PostComment;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use Illuminate\Support\Facades\DB;
 
 class PostServices
 {
@@ -58,5 +60,44 @@ class PostServices
         ]);
 
         return $post;
+    }
+
+    public function addComment(Post $post, $comment)
+    {
+        $user = auth()->user();
+
+        DB::beginTransaction();
+
+        $comment = PostComment::create([
+            'post_id' => $post->id,
+            'user_id' => $user->id,
+            'comment' => $comment
+        ]);
+
+        $post->update(['comment_count' => $post->comments()->count()]);
+
+        DB::commit();
+
+        return $comment;
+    }
+
+    public function addReply(Post $post, PostComment $comment, $reply)
+    {
+        $user = auth()->user();
+
+        DB::beginTransaction();
+
+        $reply = PostComment::create([
+            'post_id' => $post->id,
+            'user_id' => $user->id,
+            'super_comment_id' => $comment->id,
+            'comment' => $reply
+        ]);
+
+        $comment->update(['comment_reply_count' => $comment->replies()->count()]);
+
+        DB::commit();
+
+        return $reply;
     }
 }

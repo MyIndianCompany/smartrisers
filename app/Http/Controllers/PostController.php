@@ -125,28 +125,37 @@ class PostController extends Controller
         }
     }
 
-    public function comment(Request $request, Post $post)
+    public function comment(Request $request, Post $post, PostServices $postService)
     {
         $request->validate([
             'comment' => 'required|string|max:255',
         ]);
 
         try {
-            DB::beginTransaction();
-            $user = auth()->user();
-            PostComment::create([
-                'post_id' => $post->id,
-                'user_id' => $user->id,
-                'comment' => $request->input('comment')
-            ]);
-            $post->update(['comment_count' => $post->comments()->count()]);
-            DB::commit();
-            return response()->json(['message' => 'Comment added successfully.'], 201);
+            $comment = $postService->addComment($post, $request->input('comment'));
+            return response()->json(['message' => 'Comment added successfully.', 'comment' => $comment], 201);
         } catch (\Exception $exception) {
-            DB::rollBack();
             report($exception);
             return response()->json([
                 'message' => 'Failed to add comment. Please try again later.',
+                'error' => $exception->getMessage()
+            ], 401);
+        }
+    }
+
+    public function reply(Request $request, Post $post, PostComment $comment, PostServices $postService)
+    {
+        $request->validate([
+            'comment' => 'required|string|max:255',
+        ]);
+
+        try {
+            $reply = $postService->addReply($post, $comment, $request->input('comment'));
+            return response()->json(['message' => 'Comment reply added successfully.', 'reply' => $reply], 201);
+        } catch (\Exception $exception) {
+            report($exception);
+            return response()->json([
+                'message' => 'Failed to add comment reply. Please try again later.',
                 'error' => $exception->getMessage()
             ], 401);
         }
@@ -167,35 +176,6 @@ class PostController extends Controller
             report($exception);
             return response()->json([
                 'message' => 'Failed to like the post comment. Please try again later.',
-                'error' => $exception->getMessage()
-            ], 401);
-        }
-    }
-
-    //Comment Reply
-    public function reply(Request $request, Post $post, PostComment $comment)
-    {
-        $request->validate([
-            'comment' => 'required|string|max:255',
-        ]);
-
-        try {
-            DB::beginTransaction();
-            $user = auth()->user();
-            $reply = PostComment::create([
-                'post_id' => $post->id,
-                'user_id' => $user->id,
-                'super_comment_id' => $comment->id,
-                'comment' => $request->input('comment')
-            ]);
-            $comment->update(['comment_reply_count' => $comment->replies()->count()]);
-            DB::commit();
-            return response()->json(['message' => 'Comment reply added successfully.', 'reply' => $reply], 201);
-        } catch (\Exception $exception) {
-            DB::rollBack();
-            report($exception);
-            return response()->json([
-                'message' => 'Failed to add comment reply. Please try again later.',
                 'error' => $exception->getMessage()
             ], 401);
         }
