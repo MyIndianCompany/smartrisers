@@ -68,38 +68,14 @@ class PostController extends Controller
         return response()->json($posts, 201);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, PostServices $postService)
     {
         $request->validate([
             'file' => 'required|mimes:mp4,mov,avi|max:102400',
         ]);
-        $uploadedFile = $request->file('file');
         try {
             DB::beginTransaction();
-            $originalFileName = $uploadedFile->getClientOriginalName();
-            $uploadedVideo    = Cloudinary::uploadVideo($uploadedFile->getRealPath());
-            $videoUrl         = $uploadedVideo->getSecurePath();
-            $publicId         = $uploadedVideo->getPublicId();
-            $fileSize         = $uploadedVideo->getSize();
-            $fileType         = $uploadedVideo->getFileType();
-            $width            = $uploadedVideo->getWidth();
-            $height           = $uploadedVideo->getHeight();
-            if (!$uploadedFile) {
-                throw new BbyteException('File not found!');
-            }
-            $user = auth()->user()->id;
-            Post::create([
-                'user_id'            => $user,
-                'caption'            => $request->input('caption'),
-                'original_file_name' => $originalFileName,
-                'file_url'           => $videoUrl,
-                'public_id'          => $publicId,
-                'file_size'          => $fileSize,
-                'file_type'          => $fileType,
-                'mime_type'          => $uploadedFile->getMimeType(),
-                'width'              => $width,
-                'height'             => $height,
-            ]);
+            $postService->uploadPost($request);
             DB::commit();
             return response()->json(['success' => 'Your post has been successfully uploaded!'], 201);
         } catch (\Exception $exception) {

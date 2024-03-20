@@ -3,6 +3,7 @@
 namespace App\Services\Posts;
 
 use App\Models\Post;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class PostServices
 {
@@ -28,5 +29,34 @@ class PostServices
                 $query->select('id', 'name', 'username', 'profile_picture');
             },
         ])->inRandomOrder();
+    }
+
+    public function uploadPost($request)
+    {
+        $uploadedFile = $request->file('file');
+        $originalFileName = $uploadedFile->getClientOriginalName();
+        $uploadedVideo = Cloudinary::uploadVideo($uploadedFile->getRealPath());
+        $videoUrl = $uploadedVideo->getSecurePath();
+        $publicId = $uploadedVideo->getPublicId();
+        $fileSize = $uploadedVideo->getSize();
+        $fileType = $uploadedVideo->getFileType();
+        $width = $uploadedVideo->getWidth();
+        $height = $uploadedVideo->getHeight();
+
+        $user = auth()->user()->id;
+        $post = Post::create([
+            'user_id' => $user,
+            'caption' => $request->input('caption'),
+            'original_file_name' => $originalFileName,
+            'file_url' => $videoUrl,
+            'public_id' => $publicId,
+            'file_size' => $fileSize,
+            'file_type' => $fileType,
+            'mime_type' => $uploadedFile->getMimeType(),
+            'width' => $width,
+            'height' => $height,
+        ]);
+
+        return $post;
     }
 }
