@@ -40,6 +40,7 @@ Route::controller(\App\Http\Controllers\PostController::class)->group(function (
             Route::post('upload','store');
             Route::post('{post}/like', 'like');
             Route::post('{post}/comment', 'comment');
+            Route::post('{postComment}/like', 'commentLike');
             Route::post('{post}/comment/{comment}/reply', 'reply');
             Route::delete('{post}', 'destroy');
         });

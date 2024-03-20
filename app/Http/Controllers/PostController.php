@@ -260,6 +260,26 @@ class PostController extends Controller
         }
     }
 
+    public function commentLike(PostComment $postComment)
+    {
+        try {
+            DB::beginTransaction();
+            $user = auth()->user();
+            $like = $user->likes()->where('comment_id', $postComment->id)->first();
+            $like ? $like->delete() : $user->likes()->create(['comment_id' => $postComment->id]);
+            $postComment->update(['comment_like_count' => $postComment->likes()->count()]);
+            DB::commit();
+            return response()->json(['message' => 'Post Comment liked successfully.'], 201);
+        } catch (\Exception $exception) {
+            DB::rollBack();
+            report($exception);
+            return response()->json([
+                'message' => 'Failed to like the post comment. Please try again later.',
+                'error' => $exception->getMessage()
+            ], 401);
+        }
+    }
+
     //Comment Reply
     public function reply(Request $request, Post $post, PostComment $comment)
     {
