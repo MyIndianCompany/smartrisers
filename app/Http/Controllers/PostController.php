@@ -7,123 +7,44 @@ use App\Exceptions\CustomException\BbyteException;
 use App\Models\Follower;
 use App\Models\Post;
 use App\Models\PostComment;
-use App\Models\PostCommentReply;
+use App\Services\Posts\PostServices;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 
 class PostController extends Controller
 {
+    protected $postService;
+
+    public function __construct(PostServices $postService)
+    {
+        $this->postService = $postService;
+    }
+
     public function index()
     {
-        $posts = Post::inRandomOrder()
-            ->with([
-                'user' => function ($query) {
-                    $query->select('id', 'name', 'username', 'profile_picture');
-                },
-                'comments' => function ($query) {
-                    $query->whereNull('super_comment_id');
-                },
-                'comments.user' => function ($query) {
-                    $query->select('id', 'name', 'username', 'profile_picture');
-                },
-                'comments.replies.user' => function ($query) {
-                    $query->select('id', 'name', 'username', 'profile_picture');
-                },
-                'comments.replies.replies.user' => function ($query) {
-                    $query->select('id', 'name', 'username', 'profile_picture');
-                },
-                'comments.replies.replies.replies.user' => function ($query) {
-                    $query->select('id', 'name', 'username', 'profile_picture');
-                },
-            ])
-            ->get();
-
-        $posts->each(function ($post) {
-            $post->comment_count = $post->comments->count();
-            $post->reply_count = $post->comments->flatMap->replies->count();
-            $post->nested_reply_count = $post->comments->flatMap->replies->flatMap->replies->count();
-        });
-
+        $posts = $this->postService->getPostsQuery()->get();
         return response()->json($posts, 201);
     }
 
     public function getPostsByUserId(Request $request, $userId)
     {
-        $posts = Post::where('user_id', $userId)->inRandomOrder()
-            ->with([
-                'user' => function ($query) {
-                    $query->select('id', 'name', 'username', 'profile_picture');
-                },
-                'comments' => function ($query) {
-                    $query->whereNull('super_comment_id');
-                },
-                'comments.user' => function ($query) {
-                    $query->select('id', 'name', 'username', 'profile_picture');
-                },
-                'comments.replies.user' => function ($query) {
-                    $query->select('id', 'name', 'username', 'profile_picture');
-                },
-                'comments.replies.replies.user' => function ($query) {
-                    $query->select('id', 'name', 'username', 'profile_picture');
-                },
-                'comments.replies.replies.replies.user' => function ($query) {
-                    $query->select('id', 'name', 'username', 'profile_picture');
-                },
-            ])
+        $posts = $this->postService->getPostsQuery()
+            ->where('user_id', $userId)
             ->get();
-
-        $followedUserIds = Follower::where('follower_user_id', auth()->id())
-            ->pluck('following_user_id')
-            ->toArray();
-
-        $posts->each(function ($post) use ($followedUserIds) {
-            $post->comment_count = $post->comments->count();
-            $post->reply_count = $post->comments->flatMap->replies->count();
-            $post->nested_reply_count = $post->comments->flatMap->replies->flatMap->replies->count();
-            if (auth()) {
-                $post->liked = $post->likes->contains('user_id', auth()->id());
-                $post->followed = in_array($post->user->id, $followedUserIds);
-                $post->is_owner = $post->user->id === auth()->id();
-            }
-            unset($post->likes); // Remove the likes array from the post object
-        });
-
         return response()->json($posts, 201);
     }
 
     public function getPostsByAuthUsers(Request $request)
     {
-        $authUserId = auth()->id();
-
-        $posts = Post::inRandomOrder()
-            ->with([
-                'user' => function ($query) {
-                    $query->select('id', 'name', 'username', 'profile_picture');
-                },
-                'comments' => function ($query) {
-                    $query->whereNull('super_comment_id');
-                },
-                'comments.user' => function ($query) {
-                    $query->select('id', 'name', 'username', 'profile_picture');
-                },
-                'comments.replies.user' => function ($query) {
-                    $query->select('id', 'name', 'username', 'profile_picture');
-                },
-                'comments.replies.replies.user' => function ($query) {
-                    $query->select('id', 'name', 'username', 'profile_picture');
-                },
-                'comments.replies.replies.replies.user' => function ($query) {
-                    $query->select('id', 'name', 'username', 'profile_picture');
-                },
-            ])
-            ->get();
-
+        $authUserId = Auth::id();
         $followedUserIds = Follower::where('follower_user_id', $authUserId)
             ->pluck('following_user_id')
             ->toArray();
 
+        $posts = $this->postService->getPostsQuery()->get();
         $posts->each(function ($post) use ($authUserId, $followedUserIds) {
             $post->comment_count = $post->comments->count();
             $post->reply_count = $post->comments->flatMap->replies->count();
@@ -139,43 +60,13 @@ class PostController extends Controller
 
     public function getPosts(Request $request)
     {
-        $user = auth()->user();
+        $user = Auth::user();
         $userId = $request->input('user_id', $user->id);
-        $posts = Post::where('user_id', $userId)->inRandomOrder()->get();
-        $user->load('likes');
-
-        $posts->load([
-            'comments' => function ($query) {
-                $query->whereNull('super_comment_id');
-            },
-            'comments.user' => function ($query) {
-                $query->select('id', 'name', 'username');
-            },
-            'comments.replies.user' => function ($query) {
-                $query->select('id', 'name', 'username');
-            },
-            'comments.replies.replies.user' => function ($query) {
-                $query->select('id', 'name', 'username');
-            },
-            'comments.replies.replies.replies.user' => function ($query) {
-                $query->select('id', 'name', 'username');
-            }
-        ]);
-
-        $posts->each(function ($post) {
-            $post->comment_count = $post->comments->count();
-            $post->reply_count = $post->comments->flatMap->replies->count();
-            $post->nested_reply_count = $post->comments->flatMap->replies->flatMap->replies->count();
-        });
-
-        $posts->each(function ($post) use ($user) {
-            $post->liked = $user->likes->contains('post_id', $post->id);
-        });
-
+        $posts = $this->postService->getPostsQuery()
+            ->where('user_id', $userId)
+            ->get();
         return response()->json($posts, 201);
     }
-
-
 
     public function store(Request $request)
     {
