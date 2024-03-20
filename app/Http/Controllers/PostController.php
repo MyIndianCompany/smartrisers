@@ -108,7 +108,7 @@ class PostController extends Controller
                 ])
                 ->get();
 
-            $followedUserIds = Follower::where('follower_user_id', $authUserId)
+            $followedUserIds = Follower::where('following_user_id', $authUserId)
                 ->pluck('follower_user_id')
                 ->toArray();
 
@@ -120,7 +120,7 @@ class PostController extends Controller
                 $post->followed = $post->user_id === $followedUserIds;
                 $post->is_owner = $post->user_id === $authUserId;
                 unset($post->likes);
-                unset($post->user->followers);
+//                unset($post->user->followers);
             });
 
             return response()->json(['posts' => $posts], 201);
