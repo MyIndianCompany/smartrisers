@@ -107,8 +107,8 @@ class PostController extends Controller
                 ])
                 ->get();
 
-            $followedUserIds = Follower::where('follower_id', $authUserId)
-                ->pluck('followed_id') // Assuming 'followed_id' is the correct column name
+            $followedUserIds = Follower::where('follower_user_id', $authUserId)
+                ->pluck('follower_user_id') // Assuming 'followed_id' is the correct column name
                 ->toArray();
 
             $posts->each(function ($post) use ($authUserId, $followedUserIds) {
