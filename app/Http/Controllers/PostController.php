@@ -105,25 +105,6 @@ class PostController extends Controller
             ], 422);
         }
     }
-    public function like(Post $post)
-    {
-        try {
-            DB::beginTransaction();
-            $user = auth()->user();
-            $like = $user->likes()->where('post_id', $post->id)->first();
-            $like ? $like->delete() : $user->likes()->create(['post_id' => $post->id]);
-            $post->update(['like_count' => $post->likes()->count()]);
-            DB::commit();
-            return response()->json(['message' => 'Post liked successfully.'], 201);
-        } catch (\Exception $exception) {
-            DB::rollBack();
-            report($exception);
-            return response()->json([
-                'message' => 'Failed to like the post. Please try again later.',
-                'error' => $exception->getMessage()
-            ], 401);
-        }
-    }
 
     public function comment(Request $request, Post $post, PostServices $postService)
     {
@@ -161,21 +142,29 @@ class PostController extends Controller
         }
     }
 
-    public function commentLike(PostComment $postComment)
+    public function like(Post $post, PostServices $postService)
     {
         try {
-            DB::beginTransaction();
-            $user = auth()->user();
-            $commentLikes = $user->commentLikes()->where('comment_id', $postComment->id)->first();
-            $commentLikes ? $commentLikes->delete() : $user->commentLikes()->create(['comment_id' => $postComment->id]);
-            $postComment->update(['comment_like_count' => $postComment->likes()->count()]);
-            DB::commit();
-            return response()->json(['message' => 'Post Comment liked successfully.'], 201);
+            $message = $postService->likePost($post);
+            return response()->json(['message' => $message], 201);
         } catch (\Exception $exception) {
-            DB::rollBack();
             report($exception);
             return response()->json([
-                'message' => 'Failed to like the post comment. Please try again later.',
+                'message' => 'Failed to like/unlike the post. Please try again later.',
+                'error' => $exception->getMessage()
+            ], 401);
+        }
+    }
+
+    public function commentLike(PostComment $postComment, PostServices $postService)
+    {
+        try {
+            $message = $postService->likePostComment($postComment);
+            return response()->json(['message' => $message], 201);
+        } catch (\Exception $exception) {
+            report($exception);
+            return response()->json([
+                'message' => 'Failed to like/unlike the post comment. Please try again later.',
                 'error' => $exception->getMessage()
             ], 401);
         }

@@ -100,4 +100,36 @@ class PostServices
 
         return $reply;
     }
+
+    public function likePost(Post $post)
+    {
+        $user = auth()->user();
+
+        DB::beginTransaction();
+
+        $like = $user->likes()->where('post_id', $post->id)->first();
+        $like ? $like->delete() : $user->likes()->create(['post_id' => $post->id]);
+
+        $post->update(['like_count' => $post->likes()->count()]);
+
+        DB::commit();
+
+        return $like ? 'Post unliked successfully.' : 'Post liked successfully.';
+    }
+
+    public function likePostComment(PostComment $postComment)
+    {
+        $user = auth()->user();
+
+        DB::beginTransaction();
+
+        $like = $user->commentLikes()->where('comment_id', $postComment->id)->first();
+        $like ? $like->delete() : $user->commentLikes()->create(['comment_id' => $postComment->id]);
+
+        $postComment->update(['comment_like_count' => $postComment->likes()->count()]);
+
+        DB::commit();
+
+        return $like ? 'Post Comment unliked successfully.' : 'Post Comment liked successfully.';
+    }
 }
