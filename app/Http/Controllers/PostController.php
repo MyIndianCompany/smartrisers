@@ -67,14 +67,14 @@ class PostController extends Controller
         return response()->json($posts, 201);
     }
 
-    public function store(Request $request): \Illuminate\Http\JsonResponse
+    public function store(Request $request, PostServices $postServices): \Illuminate\Http\JsonResponse
     {
         $request->validate([
             'file' => 'required|mimes:mp4,mov,avi|max:102400',
         ]);
         try {
             DB::beginTransaction();
-            $this->postServices->uploadPost($request);
+            $postServices->uploadPost($request);
             DB::commit();
             return response()->json(['success' => 'Your post has been successfully uploaded!'], 201);
         } catch (\Exception $exception) {
