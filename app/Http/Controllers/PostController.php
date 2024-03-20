@@ -87,7 +87,7 @@ class PostController extends Controller
 
             $posts = Post::inRandomOrder()
                 ->with([
-                    'user'=> function ($query) {
+                    'user' => function ($query) {
                         $query->select('id', 'name', 'username');
                     },
                     'comments' => function ($query) {
@@ -108,7 +108,7 @@ class PostController extends Controller
                 ])
                 ->get();
 
-            $followedUserIds = Follower::where('following_user_id', $authUserId)
+            $followedUserIds = Follower::where('follower_user_id', $authUserId)
                 ->pluck('following_user_id')
                 ->toArray();
 
@@ -117,10 +117,10 @@ class PostController extends Controller
                 $post->reply_count = $post->comments->flatMap->replies->count();
                 $post->nested_reply_count = $post->comments->flatMap->replies->flatMap->replies->count();
                 $post->liked = $post->likes->contains('user_id', $authUserId);
-                $post->followed = $post->user_id === $followedUserIds;
-                $post->is_owner = $post->user_id === $authUserId;
+                $post->followed = in_array($post->user->id, $followedUserIds);
+                $post->is_owner = $post->user->id === $authUserId;
                 unset($post->likes);
-//                unset($post->user->followers);
+                // unset($post->user->followers); // No need to unset followers here
             });
 
             return response()->json(['posts' => $posts], 201);
