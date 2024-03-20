@@ -118,11 +118,11 @@ class PostController extends Controller
             $post->followed = in_array($post->user_id, $followedUserIds);
             $post->is_owner = $post->user_id === $authUserId;
             unset($post->likes); // Remove the likes array from the post object
+            unset($post->user->followers); // Remove the followers array from the user object
         });
 
         return response()->json(['posts' => $posts], 201);
     }
-
 
     public function getPosts(Request $request)
     {
