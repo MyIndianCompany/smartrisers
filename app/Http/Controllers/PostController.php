@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Common\Constant\Constants;
 use App\Exceptions\CustomException\BbyteException;
+use App\Models\Follower;
 use App\Models\Post;
 use App\Models\PostComment;
 use App\Models\PostCommentReply;
@@ -84,6 +85,7 @@ class PostController extends Controller
         $authUserId = auth()->id();
         $posts = Post::inRandomOrder()
             ->with([
+                'user',
                 'comments' => function ($query) {
                     $query->whereNull('super_comment_id');
                 },
@@ -98,16 +100,19 @@ class PostController extends Controller
                 },
                 'comments.replies.replies.replies.user' => function ($query) {
                     $query->select('id', 'name', 'username');
-                }
+                },
+                'likes'
             ])
             ->get();
 
-        $posts->each(function ($post) use ($authUserId) {
+        $followedUserIds = Follower::where('follower_user_id', $authUserId)->pluck('user_id')->toArray();
+
+        $posts->each(function ($post) use ($authUserId, $followedUserIds) {
             $post->comment_count = $post->comments->count();
             $post->reply_count = $post->comments->flatMap->replies->count();
             $post->nested_reply_count = $post->comments->flatMap->replies->flatMap->replies->count();
             $post->liked = $post->likes->contains('user_id', auth()->id());
-            $post->followed = $post->user->followers->contains('follower_user_id', $authUserId);
+            $post->followed =  in_array($post->user_id, $followedUserIds);
             $post->is_owner = $post->user->id === $authUserId;
             unset($post->likes); // Remove the likes array from the post object
         });
