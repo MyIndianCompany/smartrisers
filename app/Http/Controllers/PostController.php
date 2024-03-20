@@ -81,7 +81,7 @@ class PostController extends Controller
 
     public function getPostsByAuthUsers(Request $request)
     {
-        $authUserId = auth()->id;
+        $authUserId = auth()->user()->id;
         $posts = Post::inRandomOrder()
             ->with([
                 'comments' => function ($query) {
