@@ -46,7 +46,7 @@ class PostController extends Controller
             $post->nested_reply_count = $post->comments->flatMap->replies->flatMap->replies->count();
         });
 
-        return response()->json(['posts' => $posts], 201);
+        return response()->json($posts, 201);
     }
 
     public function getPostsByUserId(Request $request, $userId)
