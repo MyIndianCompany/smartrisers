@@ -83,6 +83,7 @@ class PostController extends Controller
     public function getPostsByAuthUsers(Request $request)
     {
         $authUserId = auth()->id();
+
         $posts = Post::inRandomOrder()
             ->with([
                 'user',
@@ -105,20 +106,23 @@ class PostController extends Controller
             ])
             ->get();
 
-        $followedUserIds = Follower::where('follower_user_id', $authUserId)->pluck('user_id')->toArray();
+        $followedUserIds = Follower::where('follower_id', $authUserId)
+            ->pluck('user_id')
+            ->toArray();
 
         $posts->each(function ($post) use ($authUserId, $followedUserIds) {
             $post->comment_count = $post->comments->count();
             $post->reply_count = $post->comments->flatMap->replies->count();
             $post->nested_reply_count = $post->comments->flatMap->replies->flatMap->replies->count();
-            $post->liked = $post->likes->contains('user_id', auth()->id());
-            $post->followed =  in_array($post->user_id, $followedUserIds);
-            $post->is_owner = $post->user->id === $authUserId;
+            $post->liked = $post->likes->contains('user_id', $authUserId);
+            $post->followed = in_array($post->user_id, $followedUserIds);
+            $post->is_owner = $post->user_id === $authUserId;
             unset($post->likes); // Remove the likes array from the post object
         });
 
         return response()->json(['posts' => $posts], 201);
     }
+
 
     public function getPosts(Request $request)
     {
