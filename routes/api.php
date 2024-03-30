@@ -30,7 +30,7 @@ Route::controller(\App\Http\Controllers\Auth\AuthController::class)->group(funct
 });
 
 /* Posts */
-Route::controller(\App\Http\Controllers\PostController::class)->group(function () {
+Route::controller(\App\Http\Controllers\Post\PostController::class)->group(function () {
     Route::prefix('post')->group(function () {
         Route::get('all', 'index');
         Route::middleware('auth:api')->group(function () {
@@ -42,7 +42,20 @@ Route::controller(\App\Http\Controllers\PostController::class)->group(function (
             Route::post('{post}/comment', 'comment');
             Route::post('comment/{postComment}/like', 'commentLike');
             Route::post('{post}/comment/{comment}/reply', 'reply');
+            Route::delete('comment/{comment}', 'deleteComment');
             Route::delete('{post}', 'destroy');
+        });
+    });
+});
+
+/* Post Comment */
+Route::controller(\App\Http\Controllers\Post\PostCommentController::class)->group(function () {
+    Route::prefix('post')->group(function () {
+        Route::middleware('auth:api')->group(function () {
+            Route::post('{post}/comment', 'comment');
+            Route::post('comment/{postComment}/like', 'commentLike');
+            Route::post('{post}/comment/{comment}/reply', 'reply');
+            Route::delete('comment/{comment}', 'deleteComment');
         });
     });
 });

@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Post;
 
+use App\Http\Controllers\Controller;
 use App\Models\Follower;
 use App\Models\Post;
-use App\Models\PostComment;
 use App\Services\Posts\PostServices;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Http\Request;
@@ -106,40 +106,6 @@ class PostController extends Controller
         }
     }
 
-    public function comment(Request $request, Post $post): \Illuminate\Http\JsonResponse
-    {
-        $request->validate([
-            'comment' => 'required|string|max:255',
-        ]);
-        try {
-            $this->postServices->addComment($post, $request->input('comment'));
-            return response()->json(['message' => 'Comment added successfully.'], 201);
-        } catch (\Exception $exception) {
-            report($exception);
-            return response()->json([
-                'message' => 'Failed to add comment. Please try again later.',
-                'error' => $exception->getMessage()
-            ], 401);
-        }
-    }
-
-    public function reply(Request $request, Post $post, PostComment $comment): \Illuminate\Http\JsonResponse
-    {
-        $request->validate([
-            'comment' => 'required|string|max:255',
-        ]);
-        try {
-            $this->postServices->addReply($post, $comment, $request->input('comment'));
-            return response()->json(['message' => 'Comment reply added successfully.'], 201);
-        } catch (\Exception $exception) {
-            report($exception);
-            return response()->json([
-                'message' => 'Failed to add comment reply. Please try again later.',
-                'error' => $exception->getMessage()
-            ], 401);
-        }
-    }
-
     public function like(Post $post): \Illuminate\Http\JsonResponse
     {
         try {
@@ -154,17 +120,4 @@ class PostController extends Controller
         }
     }
 
-    public function commentLike(PostComment $postComment): \Illuminate\Http\JsonResponse
-    {
-        try {
-            $message = $this->postServices->likePostComment($postComment);
-            return response()->json(['message' => $message], 201);
-        } catch (\Exception $exception) {
-            report($exception);
-            return response()->json([
-                'message' => 'Failed to like/unlike the post comment. Please try again later.',
-                'error' => $exception->getMessage()
-            ], 401);
-        }
-    }
 }
