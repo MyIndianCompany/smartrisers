@@ -35,6 +35,12 @@ class FollowerController extends Controller
             }
 
             $currentUser->following()->attach($user->id);
+
+            // Update following count of the current user
+            $currentUser->profile->increment('following_count');
+
+            // Update follower count of the user being followed
+            $user->profile->increment('follower_count');
             DB::commit();
             return response()->json([
                 'message' => 'User followed successfully'

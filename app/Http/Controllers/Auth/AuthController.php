@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Common\Constants\Constants;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\UserProfile;
 use App\Services\AuthService\AuthServices;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -35,6 +36,12 @@ class AuthController extends Controller
                 'username' => $authServices->username(),
                 'email' => $request->input('email'),
                 'password' => bcrypt($request->input('password')),
+            ]);
+            UserProfile::create([
+                'user_id' => $user->id,
+                'name' => $request->input('name'),
+                'username' => $authServices->username(),
+                'email' => $request->input('email'),
             ]);
             $token = $authServices->generateAccessToken($user);
             DB::commit();
@@ -76,6 +83,4 @@ class AuthController extends Controller
 
         return response()->json(['message' => 'Successfully logged out'], 201);
     }
-
-
 }

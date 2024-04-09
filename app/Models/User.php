@@ -80,4 +80,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(PostCommentLike::class, 'user_id');
     }
+
+    public function profile(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(UserProfile::class);
+    }
+
+    public function website(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(UserWebsiteUrl::class);
+    }
 }

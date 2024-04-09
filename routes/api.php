@@ -29,6 +29,15 @@ Route::controller(\App\Http\Controllers\Auth\AuthController::class)->group(funct
    });
 });
 
+Route::controller(\App\Http\Controllers\UserController::class)->group(function () {
+    Route::prefix('user')->group(function () {
+        Route::get('{username}', 'userProfile');
+        Route::middleware('auth:api')->group(function () {
+            Route::patch('profile', 'updateProfile');
+        });
+    });
+});
+
 /* Posts */
 Route::controller(\App\Http\Controllers\Post\PostController::class)->group(function () {
     Route::prefix('post')->group(function () {
@@ -69,4 +78,5 @@ Route::controller(\App\Http\Controllers\FollowerController::class)->group(functi
         Route::post('/follow/{user}', 'follow');
     });
 });
+
 
