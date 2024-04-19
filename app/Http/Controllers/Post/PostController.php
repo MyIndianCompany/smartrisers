@@ -76,6 +76,10 @@ class PostController extends Controller
             DB::beginTransaction();
             $user_id = auth()->id(); // Get the authenticated user's ID
             $postService->uploadPost($request, $user_id); // Pass the user ID to the uploadPost method
+
+//            $user_id = auth()->id();
+//            $postService->uploadPost($request, $user_id);
+//            $user_id->profile->increment('post_count');
             DB::commit();
             return response()->json(['success' => 'Your post has been successfully uploaded!'], 201);
         } catch (\Exception $exception) {
@@ -110,7 +114,10 @@ class PostController extends Controller
     {
         try {
             $message = $this->postServices->likePost($post);
-            return response()->json(['message' => $message], 201);
+            return response()->json([
+                'total_likes' => $post->likes()->count(),
+                'message' => $message
+            ], 201);
         } catch (\Exception $exception) {
             report($exception);
             return response()->json([
