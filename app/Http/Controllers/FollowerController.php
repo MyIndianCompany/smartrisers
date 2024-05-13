@@ -24,7 +24,7 @@ class FollowerController extends Controller
     public function follow(User $user): \Illuminate\Http\JsonResponse
     {
         try {
-            $currentUser = auth()->user();
+            $currentUser = auth()->user()->load('profile');
 
             if ($currentUser->id === $user->id) {
                 return response()->json(['message' => 'You cannot follow yourself.'], 400);
@@ -33,6 +33,8 @@ class FollowerController extends Controller
             if ($currentUser->following()->where('following_user_id', $user->id)->exists()) {
                 return response()->json(['message' => 'You are already following this user.'], 400);
             }
+
+            $user = $user->load('profile');
 
             DB::beginTransaction();
 
@@ -59,7 +61,6 @@ class FollowerController extends Controller
             ], 500);
         }
     }
-
 
     public function following(): \Illuminate\Http\JsonResponse
     {
