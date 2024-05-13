@@ -6,6 +6,7 @@ use App\Models\Follower;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class FollowerController extends Controller
 {
@@ -48,6 +49,7 @@ class FollowerController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             report($e);
+            Log::error('Follow error: ' . $e->getMessage() . ' ' . $e->getTraceAsString());
             return response()->json([
                 'message' => 'An error occurred while trying to follow the user.',
                 'error' => $e->getMessage()
