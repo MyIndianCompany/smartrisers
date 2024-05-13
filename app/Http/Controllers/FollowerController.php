@@ -24,7 +24,7 @@ class FollowerController extends Controller
     public function follow(User $user): \Illuminate\Http\JsonResponse
     {
         try {
-            $currentUser = auth()->user()->load('profile');
+            $currentUser = auth()->user();
 
             if ($currentUser->id === $user->id) {
                 return response()->json(['message' => 'You cannot follow yourself.'], 400);
@@ -34,17 +34,27 @@ class FollowerController extends Controller
                 return response()->json(['message' => 'You are already following this user.'], 400);
             }
 
-            $user = $user->load('profile');
+            // Eager load the 'profile' relationship for both users
+            $currentUser->load('profile');
+            $user->load('profile');
 
             DB::beginTransaction();
 
             $currentUser->following()->attach($user->id);
 
-            // Update following count of the current user
-            $currentUser->profile->increment('following_count');
+            // Check if 'profile' relationship is loaded for $currentUser
+            if ($currentUser->profile) {
+                $currentUser->profile->increment('following_count');
+            } else {
+                throw new \Exception('Profile not loaded for current user.');
+            }
 
-            // Update follower count of the user being followed
-            $user->profile->increment('follower_count');
+            // Check if 'profile' relationship is loaded for $user
+            if ($user->profile) {
+                $user->profile->increment('follower_count');
+            } else {
+                throw new \Exception('Profile not loaded for the user being followed.');
+            }
 
             DB::commit();
 
