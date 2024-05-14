@@ -96,5 +96,43 @@ class UserController extends Controller
         return response()->json($user->first());
     }
 
+    public function getAllUserProfile()
+    {
+        // Retrieve only specified fields from the user_profiles table without related data
+        $userProfiles = UserProfile::select(
+            'user_id',
+            'name',
+            'username',
+            'email',
+            'bio',
+            'gender',
+            'custom_gender',
+            'profile_picture',
+            'post_count',
+            'follower_count',
+            'following_count'
+        )->get();
+
+        // Transform the result set to exclude any unexpected data
+        $userProfiles = $userProfiles->map(function ($profile) {
+            return [
+                'user_id' => $profile->user_id,
+                'name' => $profile->name,
+                'username' => $profile->username,
+                'email' => $profile->email,
+                'bio' => $profile->bio,
+                'gender' => $profile->gender,
+                'custom_gender' => $profile->custom_gender,
+                'profile_picture' => $profile->profile_picture,
+                'post_count' => $profile->post_count,
+                'follower_count' => $profile->follower_count,
+                'following_count' => $profile->following_count,
+            ];
+        });
+
+        // Return the transformed profiles
+        return $userProfiles;
+    }
+
 }
 
