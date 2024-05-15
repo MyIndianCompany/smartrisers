@@ -134,5 +134,24 @@ class UserController extends Controller
         return $userProfiles;
     }
 
+    public function getFollowersByUsername($username)
+    {
+        $user = User::where('username', $username)->first();
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+        $followers = $user->followers;
+        return response()->json($followers);
+    }
+
+    public function getFollowingsByUsername($username)
+    {
+        $user = User::where('username', $username)->first();
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+        $following = $user->following;
+        return response()->json($following);
+    }
 }
 

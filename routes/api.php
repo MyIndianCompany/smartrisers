@@ -33,6 +33,8 @@ Route::controller(\App\Http\Controllers\UserController::class)->group(function (
     Route::prefix('user')->group(function () {
         Route::get('all', 'getAllUserProfile');
         Route::get('{username}', 'userProfile');
+        Route::get('{username}/followers', 'getFollowersByUsername');
+        Route::get('{username}/followings', 'getFollowingsByUsername');
         Route::middleware('auth:api')->group(function () {
             Route::patch('profile', 'updateProfile');
         });
