@@ -4,6 +4,8 @@ namespace App\Services\Posts;
 
 use App\Models\Post;
 use App\Models\PostComment;
+use App\Models\User;
+use App\Models\UserProfile;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -35,8 +37,41 @@ class PostServices
         ])->inRandomOrder();
     }
 
+//    public function uploadPost(Request $request, int $user_id)
+//    {
+//        $uploadedFile = $request->file('file');
+//        $originalFileName = $uploadedFile->getClientOriginalName();
+//        $uploadedVideo = Cloudinary::uploadVideo($uploadedFile->getRealPath());
+//        $videoUrl = $uploadedVideo->getSecurePath();
+//        $publicId = $uploadedVideo->getPublicId();
+//        $fileSize = $uploadedVideo->getSize();
+//        $fileType = $uploadedVideo->getFileType();
+//        $width = $uploadedVideo->getWidth();
+//        $height = $uploadedVideo->getHeight();
+//        $user = Auth::user();
+//        return Post::create([
+//            'user_id'            => $user_id,
+//            'caption'            => $request->input('caption'),
+//            'original_file_name' => $originalFileName,
+//            'file_url'           => $videoUrl,
+//            'public_id'          => $publicId,
+//            'file_size'          => $fileSize,
+//            'file_type'          => $fileType,
+//            'mime_type'          => $uploadedFile->getMimeType(),
+//            'width'              => $width,
+//            'height'             => $height,
+//        ]);
+//    }
+
     public function uploadPost(Request $request, int $user_id)
     {
+        // Validate the request
+        $request->validate([
+            'file' => 'required|file|mimes:mp4,mov,ogg,qt|max:20000', // Adjust file types and size as needed
+            'caption' => 'required|string|max:255',
+        ]);
+
+        // Handle the uploaded file
         $uploadedFile = $request->file('file');
         $originalFileName = $uploadedFile->getClientOriginalName();
         $uploadedVideo = Cloudinary::uploadVideo($uploadedFile->getRealPath());
@@ -46,8 +81,9 @@ class PostServices
         $fileType = $uploadedVideo->getFileType();
         $width = $uploadedVideo->getWidth();
         $height = $uploadedVideo->getHeight();
-        $user = Auth::user();
-        return Post::create([
+
+        // Create the post
+        $post = Post::create([
             'user_id'            => $user_id,
             'caption'            => $request->input('caption'),
             'original_file_name' => $originalFileName,
@@ -59,7 +95,18 @@ class PostServices
             'width'              => $width,
             'height'             => $height,
         ]);
+        // Update the post count for the user
+        $user = UserProfile::find($user_id);
+        if ($user) {
+            $user->increment('post_count');
+            // Update the post count for the user's profile
+            $userProfile = $user->profile; // Assuming the relationship is defined as 'profile'
+            if ($userProfile) {
+                $userProfile->increment('post_count');
+            }
+        }
     }
+
 
     public function addComment(Post $post, $comment)
     {
