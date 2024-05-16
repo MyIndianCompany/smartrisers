@@ -31,16 +31,17 @@ class AuthController extends Controller
         }
         try {
             DB::beginTransaction();
+            $username = $authServices->username($request->input('name'));
             $user = User::create([
                 'name' => $request->input('name'),
-                'username' => $authServices->username(),
+                'username' => $username,
                 'email' => $request->input('email'),
                 'password' => bcrypt($request->input('password')),
             ]);
             UserProfile::create([
                 'user_id' => $user->id,
                 'name' => $request->input('name'),
-                'username' => $authServices->username(),
+                'username' => $username,
                 'email' => $request->input('email'),
             ]);
             $token = $authServices->generateAccessToken($user);
