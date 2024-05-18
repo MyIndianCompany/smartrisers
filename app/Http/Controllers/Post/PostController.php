@@ -30,9 +30,9 @@ class PostController extends Controller
     public function getPostsByUsername($username): \Illuminate\Http\JsonResponse
     {
         $user = User::where('username', $username)->first();
-//        if (!$user) {
-//            return response()->json(['message' => 'User not found'], 404);
-//        }
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
         $posts = $this->postServices->getPostsQuery()->where('user_id', $user->id)->get();
         return response()->json($posts, 201);
     }

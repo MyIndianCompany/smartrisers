@@ -45,7 +45,6 @@ Route::controller(\App\Http\Controllers\UserController::class)->group(function (
 Route::controller(\App\Http\Controllers\Post\PostController::class)->group(function () {
     Route::prefix('post')->group(function () {
         Route::get('all', 'index');
-        Route::get('{username}/user', 'getPostsByUsername');
         Route::middleware('auth:api')->group(function () {
             Route::get('user', 'getPosts');
             Route::get('auth/user', 'getPostsByAuthUsers');
@@ -57,6 +56,7 @@ Route::controller(\App\Http\Controllers\Post\PostController::class)->group(funct
             Route::delete('comment/{comment}', 'deleteComment');
             Route::delete('{post}', 'destroy');
         });
+        Route::get('{username}/user', 'getPostsByUsername');
     });
 });
 
