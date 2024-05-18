@@ -31,7 +31,7 @@ class PostController extends Controller
     {
         $user = User::where('username', $username)->first();
         if (!$user) {
-            throw new \Exception('User not found');
+            return response()->json(['message' => 'User not found'], 404);
         }
         $posts = $this->postServices->getPostsQuery()->where('user_id', $user->id)->get();
         return response()->json($posts, 201);
