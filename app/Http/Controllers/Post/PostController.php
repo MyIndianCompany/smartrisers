@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Post;
 use App\Http\Controllers\Controller;
 use App\Models\Follower;
 use App\Models\Post;
+use App\Models\User;
 use App\Services\Posts\PostServices;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Http\Request;
@@ -26,13 +27,13 @@ class PostController extends Controller
         return response()->json($posts, 201);
     }
 
-    public function getPostsByUserId($userId): \Illuminate\Http\JsonResponse
+    public function getPostsByUsername($username): \Illuminate\Http\JsonResponse
     {
-        $posts = $this
-            ->postServices
-            ->getPostsQuery()
-            ->where('user_id', $userId)
-            ->get();
+        $user = User::where('username', $username)->first();
+        if (!$user) {
+            throw new \Exception('User not found');
+        }
+        $posts = $this->postServices->getPostsQuery()->where('user_id', $user->id)->get();
         return response()->json($posts, 201);
     }
 
