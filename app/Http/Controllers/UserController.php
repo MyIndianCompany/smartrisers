@@ -2,6 +2,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\UserRequest;
+use App\Models\Post;
 use App\Models\User;
 use App\Models\UserProfile;
 use App\Models\UserWebsiteUrl;
@@ -152,6 +153,16 @@ class UserController extends Controller
         }
         $following = $user->following;
         return response()->json($following);
+    }
+
+    public function getUserCounts()
+    {
+        $userCount = User::has('profile')->count();
+        $postCount = Post::has('user')->count();
+        return response()->json([
+            'total_user_count'  => $userCount,
+            'total_post_count'  => $postCount
+        ]);
     }
 }
 
