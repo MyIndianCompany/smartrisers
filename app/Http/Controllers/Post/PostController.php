@@ -23,7 +23,7 @@ class PostController extends Controller
 
     public function index()
     {
-        $posts = $this->postServices->getPostsQuery()->inRandomOrder();
+        $posts = $this->postServices->getPostsQuery()->inRandomOrder()->get();
         return response()->json($posts, 201);
     }
 
