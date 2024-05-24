@@ -34,7 +34,7 @@ class PostServices
             'comments.replies.replies.replies.user' => function ($query) {
                 $query->select('id', 'name', 'username', 'profile_picture');
             },
-        ])->inRandomOrder();
+        ]);
     }
 
 //    public function uploadPost(Request $request, int $user_id)
