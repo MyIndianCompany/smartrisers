@@ -38,6 +38,7 @@ Route::controller(\App\Http\Controllers\UserController::class)->group(function (
         Route::get('{username}/followings', 'getFollowingsByUsername');
         Route::middleware('auth:api')->group(function () {
             Route::patch('profile', 'updateProfile');
+            Route::patch('{user}/status', 'updateStatus');
         });
     });
 });
