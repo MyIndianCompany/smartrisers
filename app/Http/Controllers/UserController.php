@@ -103,18 +103,21 @@ class UserController extends Controller
     {
         // Retrieve only specified fields from the user_profiles table without related data
         $userProfiles = UserProfile::select(
-            'user_id',
-            'name',
-            'username',
-            'email',
-            'bio',
-            'gender',
-            'custom_gender',
-            'profile_picture',
-            'post_count',
-            'follower_count',
-            'following_count'
-        )->get();
+            'user_profiles.user_id',
+            'user_profiles.name',
+            'user_profiles.username',
+            'user_profiles.email',
+            'user_profiles.bio',
+            'user_profiles.gender',
+            'user_profiles.custom_gender',
+            'user_profiles.profile_picture',
+            'user_profiles.post_count',
+            'user_profiles.follower_count',
+            'user_profiles.following_count',
+            'users.status'
+        )
+            ->leftJoin('users', 'user_profiles.user_id', '=', 'users.id')
+            ->get();
 
         // Transform the result set to exclude any unexpected data
         $userProfiles = $userProfiles->map(function ($profile) {
@@ -130,6 +133,7 @@ class UserController extends Controller
                 'post_count' => $profile->post_count,
                 'follower_count' => $profile->follower_count,
                 'following_count' => $profile->following_count,
+                'status' => $profile->status
             ];
         });
 
