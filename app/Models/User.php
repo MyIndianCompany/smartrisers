@@ -27,6 +27,7 @@ class User extends Authenticatable
         'provider_id',
         'provider_token',
         'profile_picture',
+        'status',
         'created_at',
         'updated_at',
         'deleted_at'

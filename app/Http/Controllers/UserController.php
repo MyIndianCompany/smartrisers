@@ -6,6 +6,8 @@ use App\Models\Post;
 use App\Models\User;
 use App\Models\UserProfile;
 use App\Models\UserWebsiteUrl;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
@@ -163,6 +165,27 @@ class UserController extends Controller
             'total_user_count'  => $userCount,
             'total_post_count'  => $postCount
         ]);
+    }
+
+    public function updateStatus(Request $request, User $user)
+    {
+        try {
+            DB::beginTransaction();
+            $user->update([
+                'status' => $request->has('status') ? $request->input('status') : $user->status
+            ]);
+            DB::commit();
+            return response()->json([
+                'message' => 'Status update successfully!',
+            ]);
+        } catch (\Exception $exception) {
+            DB::rollBack();
+            report($exception);
+            return response()->json([
+                'message' => 'Failed to update status!',
+                'error' => $exception->getMessage()
+            ]);
+        }
     }
 }
 
