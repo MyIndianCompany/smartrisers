@@ -6,6 +6,7 @@ use App\Models\Post;
 use App\Models\User;
 use App\Models\UserProfile;
 use App\Models\UserWebsiteUrl;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -190,6 +191,18 @@ class UserController extends Controller
                 'error' => $exception->getMessage()
             ]);
         }
+    }
+
+    public function getNewUsers(Request $request)
+    {
+        $interval = $request->input('interval', 'day'); // Default interval is day
+        $startDate = Carbon::now()->sub('1 ' . $interval);
+        $endDate = Carbon::now();
+
+        $newUsers = User::whereBetween('created_at', [$startDate, $endDate])
+            ->count();
+
+        return response()->json($newUsers);
     }
 }
 
