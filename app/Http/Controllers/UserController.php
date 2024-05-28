@@ -195,14 +195,55 @@ class UserController extends Controller
 
     public function getNewUsers(Request $request)
     {
-        $interval = $request->input('interval', 'day'); // Default interval is day
-        $startDate = Carbon::now()->sub('1 ' . $interval);
-        $endDate = Carbon::now();
+        $type = $request->query('interval', 'day'); // day, week, month, year
 
-        $newUsers = User::whereBetween('created_at', [$startDate, $endDate])
-            ->count();
+        // Determine the date range based on the type
+        switch ($type) {
+            case 'day':
+                $startDate = Carbon::today();
+                $endDate = Carbon::tomorrow();
+                $users = User::whereBetween('created_at', [$startDate, $endDate])
+                    ->selectRaw('HOUR(created_at) as period, COUNT(*) as count')
+                    ->groupBy('period')
+                    ->orderBy('period', 'asc')
+                    ->get();
+                break;
 
-        return response()->json($newUsers);
+            case 'week':
+                $startDate = Carbon::now()->startOfWeek();
+                $endDate = Carbon::now()->endOfWeek();
+                $users = User::whereBetween('created_at', [$startDate, $endDate])
+                    ->selectRaw('DATE(created_at) as period, COUNT(*) as count')
+                    ->groupBy('period')
+                    ->orderBy('period', 'asc')
+                    ->get();
+                break;
+
+            case 'month':
+                $startDate = Carbon::now()->startOfMonth();
+                $endDate = Carbon::now()->endOfMonth();
+                $users = User::whereBetween('created_at', [$startDate, $endDate])
+                    ->selectRaw('DATE(created_at) as period, COUNT(*) as count')
+                    ->groupBy('period')
+                    ->orderBy('period', 'asc')
+                    ->get();
+                break;
+
+            case 'year':
+                $startDate = Carbon::now()->startOfYear();
+                $endDate = Carbon::now()->endOfYear();
+                $users = User::whereBetween('created_at', [$startDate, $endDate])
+                    ->selectRaw('MONTH(created_at) as period, COUNT(*) as count')
+                    ->groupBy('period')
+                    ->orderBy('period', 'asc')
+                    ->get();
+                break;
+
+            default:
+                return response()->json(['error' => 'Invalid type'], 400);
+        }
+
+        return response()->json($users);
     }
 }
 
