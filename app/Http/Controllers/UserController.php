@@ -195,7 +195,7 @@ class UserController extends Controller
 
     public function getNewUsers(Request $request)
     {
-        $type = $request->query('interval', 'day'); // day, week, month, year
+       /* $type = $request->query('interval', 'day'); // day, week, month, year
 
         // Determine the date range based on the type
         switch ($type) {
@@ -243,7 +243,32 @@ class UserController extends Controller
                 return response()->json(['error' => 'Invalid type'], 400);
         }
 
-        return response()->json($users);
+        return response()->json($users);*/
+
+        $timePeriod = $request->query('period');
+        $count = 0;
+
+        try {
+            if (is_numeric($timePeriod)) {
+                // Year
+                $startDate = Carbon::create($timePeriod)->startOfYear();
+                $endDate = Carbon::create($timePeriod)->endOfYear();
+                $count = User::whereBetween('created_at', [$startDate, $endDate])->count();
+            } elseif (Carbon::hasFormat($timePeriod, 'l d F Y')) {
+                // Specific day
+                $date = Carbon::createFromFormat('l d F Y', $timePeriod);
+                $count = User::whereDate('created_at', $date)->count();
+            } else {
+                // Month (assuming format is 'F')
+                $startDate = Carbon::createFromFormat('F', $timePeriod)->startOfMonth();
+                $endDate = Carbon::createFromFormat('F', $timePeriod)->endOfMonth();
+                $count = User::whereBetween('created_at', [$startDate, $endDate])->count();
+            }
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Invalid time period format.'], 400);
+        }
+
+        return response()->json(['count' => $count]);
     }
 }
 
