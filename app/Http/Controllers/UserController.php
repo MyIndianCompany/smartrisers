@@ -195,80 +195,182 @@ class UserController extends Controller
 
     public function getNewUsers(Request $request)
     {
-       /* $type = $request->query('interval', 'day'); // day, week, month, year
+        $currentYear = Carbon::now()->year;
+        $currentMonth = Carbon::now()->month;
 
-        // Determine the date range based on the type
-        switch ($type) {
-            case 'day':
-                $startDate = Carbon::today();
-                $endDate = Carbon::tomorrow();
-                $users = User::whereBetween('created_at', [$startDate, $endDate])
-                    ->selectRaw('HOUR(created_at) as period, COUNT(*) as count')
-                    ->groupBy('period')
-                    ->orderBy('period', 'asc')
-                    ->get();
-                break;
+        // Get parameters from the request
+        $requestedYear = $request->input('year', null);
+        $requestedMonth = $request->input('month', null);
+        $requestedWeek = $request->input('week', null);
 
-            case 'week':
-                $startDate = Carbon::now()->startOfWeek();
-                $endDate = Carbon::now()->endOfWeek();
-                $users = User::whereBetween('created_at', [$startDate, $endDate])
-                    ->selectRaw('DATE(created_at) as period, COUNT(*) as count')
-                    ->groupBy('period')
-                    ->orderBy('period', 'asc')
-                    ->get();
-                break;
+        // Predefine month names
+        $months = [
+            1 => 'January',
+            2 => 'February',
+            3 => 'March',
+            4 => 'April',
+            5 => 'May',
+            6 => 'June',
+            7 => 'July',
+            8 => 'August',
+            9 => 'September',
+            10 => 'October',
+            11 => 'November',
+            12 => 'December'
+        ];
 
-            case 'month':
-                $startDate = Carbon::now()->startOfMonth();
-                $endDate = Carbon::now()->endOfMonth();
-                $users = User::whereBetween('created_at', [$startDate, $endDate])
-                    ->selectRaw('DATE(created_at) as period, COUNT(*) as count')
-                    ->groupBy('period')
-                    ->orderBy('period', 'asc')
-                    ->get();
-                break;
-
-            case 'year':
-                $startDate = Carbon::now()->startOfYear();
-                $endDate = Carbon::now()->endOfYear();
-                $users = User::whereBetween('created_at', [$startDate, $endDate])
-                    ->selectRaw('MONTH(created_at) as period, COUNT(*) as count')
-                    ->groupBy('period')
-                    ->orderBy('period', 'asc')
-                    ->get();
-                break;
-
-            default:
-                return response()->json(['error' => 'Invalid type'], 400);
+        // Predefine last 10 years
+        $years = [];
+        for ($i = 0; $i < 10; $i++) {
+            $years[$currentYear - $i] = $currentYear - $i;
         }
 
-        return response()->json($users);*/
+        $response = [];
 
-        $timePeriod = $request->query('period');
-        $count = 0;
+        // If week is provided, return weekly stats for that week
+        if ($requestedWeek) {
+            $usersByWeek = User::select(
+                DB::raw('WEEK(created_at, 1) as week'),  // Use mode 1 to start week on Monday
+                DB::raw('COUNT(*) as count')
+            )
+                ->where(DB::raw('WEEK(created_at, 1)'), $requestedWeek)
+                ->whereYear('created_at', $requestedYear ?? $currentYear)
+                ->groupBy('week')
+                ->orderBy('week')
+                ->get()
+                ->keyBy('week')
+                ->toArray();
 
-        try {
-            if (is_numeric($timePeriod)) {
-                // Year
-                $startDate = Carbon::create($timePeriod)->startOfYear();
-                $endDate = Carbon::create($timePeriod)->endOfYear();
-                $count = User::whereBetween('created_at', [$startDate, $endDate])->count();
-            } elseif (Carbon::hasFormat($timePeriod, 'l d F Y')) {
-                // Specific day
-                $date = Carbon::createFromFormat('l d F Y', $timePeriod);
-                $count = User::whereDate('created_at', $date)->count();
-            } else {
-                // Month (assuming format is 'F')
-                $startDate = Carbon::createFromFormat('F', $timePeriod)->startOfMonth();
-                $endDate = Carbon::createFromFormat('F', $timePeriod)->endOfMonth();
-                $count = User::whereBetween('created_at', [$startDate, $endDate])->count();
+            $response['weekly'] = [
+                [
+                    'week' => $requestedWeek,
+                    'count' => $usersByWeek[$requestedWeek]['count'] ?? 0
+                ]
+            ];
+        }
+        // If month is provided, return monthly stats for that month
+        else if ($requestedMonth) {
+            $usersByMonth = User::select(
+                DB::raw('MONTH(created_at) as month_number'),
+                DB::raw('COUNT(*) as count')
+            )
+                ->whereYear('created_at', $requestedYear ?? $currentYear)
+                ->whereMonth('created_at', $requestedMonth)
+                ->groupBy('month_number')
+                ->orderBy('month_number')
+                ->get()
+                ->keyBy('month_number')
+                ->toArray();
+
+            $response['monthly'] = [
+                $requestedMonth => [
+                    'month' => $months[$requestedMonth],
+                    'count' => $usersByMonth[$requestedMonth]['count'] ?? 0
+                ]
+            ];
+        }
+        // If year is provided, return yearly stats for that year
+        else if ($requestedYear) {
+            $usersByYear = User::select(
+                DB::raw('YEAR(created_at) as year'),
+                DB::raw('COUNT(*) as count')
+            )
+                ->whereYear('created_at', $requestedYear)
+                ->groupBy('year')
+                ->orderBy('year', 'desc')
+                ->get()
+                ->keyBy('year')
+                ->toArray();
+
+            $response['yearly'] = [
+                [
+                    'year' => $requestedYear,
+                    'count' => $usersByYear[$requestedYear]['count'] ?? 0
+                ]
+            ];
+        }
+        // If no specific parameter is provided, return all stats
+        else {
+            // Monthly stats for the current year
+            $usersByMonth = User::select(
+                DB::raw('MONTH(created_at) as month_number'),
+                DB::raw('COUNT(*) as count')
+            )
+                ->whereYear('created_at', $currentYear)
+                ->groupBy('month_number')
+                ->orderBy('month_number')
+                ->get()
+                ->keyBy('month_number')
+                ->toArray();
+
+            // Fill in the missing months with count 0
+            $monthlyStats = [];
+            foreach ($months as $number => $name) {
+                $monthlyStats[$number] = [
+                    'month' => $name,
+                    'count' => $usersByMonth[$number]['count'] ?? 0
+                ];
             }
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Invalid time period format.'], 400);
+
+            // Yearly stats (last 10 years)
+            $usersByYear = User::select(
+                DB::raw('YEAR(created_at) as year'),
+                DB::raw('COUNT(*) as count')
+            )
+                ->whereIn(DB::raw('YEAR(created_at)'), array_values($years))
+                ->groupBy('year')
+                ->orderBy('year', 'desc')
+                ->get()
+                ->keyBy('year')
+                ->toArray();
+
+            // Fill in the missing years with count 0
+            $yearlyStats = [];
+            foreach ($years as $year) {
+                $yearlyStats[] = [
+                    'year' => $year,
+                    'count' => $usersByYear[$year]['count'] ?? 0
+                ];
+            }
+
+            // Weekly stats for the current month
+            $usersByWeek = User::select(
+                DB::raw('WEEK(created_at, 1) as week'),  // Use mode 1 to start week on Monday
+                DB::raw('COUNT(*) as count')
+            )
+                ->whereMonth('created_at', $currentMonth)
+                ->whereYear('created_at', $currentYear)
+                ->groupBy('week')
+                ->orderBy('week')
+                ->get()
+                ->keyBy('week')
+                ->toArray();
+
+            // Get the weeks for the current month
+            $weeksInMonth = [];
+            $currentDate = Carbon::now()->startOfMonth();
+            while ($currentDate->month == $currentMonth) {
+                $weeksInMonth[] = $currentDate->weekOfYear;
+                $currentDate->addWeek();
+            }
+
+            // Fill in the missing weeks with count 0
+            $weeklyStats = [];
+            foreach ($weeksInMonth as $week) {
+                $weeklyStats[] = [
+                    'week' => $week,
+                    'count' => $usersByWeek[$week]['count'] ?? 0
+                ];
+            }
+
+            $response = [
+                'monthly' => $monthlyStats,
+                'yearly' => $yearlyStats,
+                'weekly' => $weeklyStats,
+            ];
         }
 
-        return response()->json(['count' => $count]);
+        return response()->json($response);
     }
 }
 
