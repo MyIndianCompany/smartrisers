@@ -263,7 +263,7 @@ class UserController extends Controller
                 ->toArray();
 
             $response['monthly'] = [
-                $requestedMonth => [
+                [
                     'month' => $months[$requestedMonth],
                     'count' => $usersByMonth[$requestedMonth]['count'] ?? 0
                 ]
@@ -306,7 +306,7 @@ class UserController extends Controller
             // Fill in the missing months with count 0
             $monthlyStats = [];
             foreach ($months as $number => $name) {
-                $monthlyStats[$number] = [
+                $monthlyStats[] = [
                     'month' => $name,
                     'count' => $usersByMonth[$number]['count'] ?? 0
                 ];
