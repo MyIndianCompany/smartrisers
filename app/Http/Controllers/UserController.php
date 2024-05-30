@@ -81,6 +81,7 @@ class UserController extends Controller
                 'user_profiles.follower_count',
                 'user_profiles.following_count',
                 'user_profiles.created_at',
+                'users.status',
                 'user_website_urls.url'
             )
             ->get()
