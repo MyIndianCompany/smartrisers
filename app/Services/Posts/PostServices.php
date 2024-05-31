@@ -67,7 +67,7 @@ class PostServices
     {
         // Validate the request
         $request->validate([
-            'file' => 'required|file|mimes:mp4,mov,ogg,qt|max:20000', // Adjust file types and size as needed
+            'file' => 'required|file|mimes:mp4,mov,ogg,qt', // Adjust file types and size as needed
             'caption' => 'required|string|max:255',
         ]);
 
