@@ -1,46 +1,63 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Common\Constants\Constants;
 use App\Http\Requests\UserRequest;
 use App\Models\Post;
 use App\Models\User;
 use App\Models\UserProfile;
 use App\Models\UserWebsiteUrl;
 use Carbon\Carbon;
+use Cloudinary\Cloudinary;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary as CloudinaryLabs;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
     public function updateProfile(UserRequest $request)
     {
-        $user = auth()->user();
         try {
+            $user = auth()->user();
             DB::beginTransaction();
-            $user->update([
-                'name' => $request->has('name') ? $request->input('name') : $user->name,
-                'username' => $request->has('username') ? $request->input('username') : $user->username,
-                'email' => $request->has('email') ? $request->input('email') : $user->email
-            ]);
-            $userProfile = $user->profile;
-            if (!$userProfile) {
-                $userProfile = new UserProfile();
+            if ($request->has('profile_picture')) {
+                $file = $request->file('profile_picture');
+                if ($file) {
+                    $filePath = $file->getRealPath();
+                    try {
+                        $uploadResult = CloudinaryLabs::upload($filePath)->getSecurePath();
+                        $profilePicture = $uploadResult;
+                    } catch (\Exception $e) {
+                        return response()->json(['message' => 'Cloudinary upload error', 'error' => $e->getMessage()]);
+                    }
+                } else {
+                    return response()->json(['message' => 'No file found in the request.']);
+                }
+            } else {
+                return response()->json(['Request does not contain a profile picture.']);
             }
+            $user->update([
+                'name' => $request->input('name', $user->name),
+                'username' => $request->input('username', $user->username),
+                'email' => $request->input('email', $user->email),
+                'profile_picture' => $profilePicture,
+            ]);
+            $userProfile = $user->profile ?: new UserProfile();
             $userProfile->fill([
                 'name' => $user->name,
                 'username' => $user->username,
                 'email' => $user->email,
-                'bio' => request()->has('bio') ? request()->input('bio') : $userProfile->bio,
-                'gender' => request()->has('gender') ? request()->input('gender') : $userProfile->gender,
-                'custom_gender' => request()->has('custom_gender') ? request()->input('custom_gender') : $userProfile->custom_gender,
-                'profile_picture' => request()->has('profile_picture') ? request()->input('profile_picture') : NULL,
+                'bio' => $request->input('bio', $userProfile->bio),
+                'gender' => $request->input('gender', $userProfile->gender),
+                'custom_gender' => $request->input('custom_gender', $userProfile->custom_gender),
+                'profile_picture' => $profilePicture,
             ]);
             $user->profile()->save($userProfile);
-
             $urls = $request->input('urls', []);
             $existingUrls = $user->website->pluck('url')->toArray();
-
             foreach ($urls as $url) {
                 if (!in_array($url, $existingUrls) && count($existingUrls) < 5) {
                     $userWebsite = new UserWebsiteUrl(['url' => $url]);
@@ -61,6 +78,10 @@ class UserController extends Controller
             ], 500);
         }
     }
+
+
+
+
 
     public function userProfile($username)
     {
