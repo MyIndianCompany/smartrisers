@@ -67,7 +67,8 @@ class UserController extends Controller
             }
             DB::commit();
             return response()->json([
-                'message' => 'Done'
+                'message' => 'Profile update successful',
+                'profile' => $user->profile_picture
             ]);
         } catch (\Exception $exception) {
             DB::rollBack();
