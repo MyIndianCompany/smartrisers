@@ -292,25 +292,28 @@ class UserController extends Controller
                 ]
             ];
         }
-        // If year is provided, return yearly stats for that year
+        // If year is provided, return monthly stats for that year
         else if ($requestedYear) {
-            $usersByYear = User::select(
-                DB::raw('YEAR(created_at) as year'),
-                DB::raw('COUNT(*) as count')
-            )
-                ->whereYear('created_at', $requestedYear)
-                ->groupBy('year')
-                ->orderBy('year', 'desc')
-                ->get()
-                ->keyBy('year')
-                ->toArray();
+            $monthlyStats = [];
+            foreach ($months as $number => $name) {
+                $usersByMonth = User::select(
+                    DB::raw('MONTH(created_at) as month_number'),
+                    DB::raw('COUNT(*) as count')
+                )
+                    ->whereYear('created_at', $requestedYear)
+                    ->whereMonth('created_at', $number)
+                    ->groupBy('month_number')
+                    ->orderBy('month_number')
+                    ->get()
+                    ->keyBy('month_number')
+                    ->toArray();
 
-            $response['yearly'] = [
-                [
-                    'year' => $requestedYear,
-                    'count' => $usersByYear[$requestedYear]['count'] ?? 0
-                ]
-            ];
+                $monthlyStats[] = [
+                    'month' => $name,
+                    'count' => $usersByMonth[$number]['count'] ?? 0
+                ];
+            }
+            $response['yearly'] = $monthlyStats;
         }
         // If no specific parameter is provided, return all stats
         else {
