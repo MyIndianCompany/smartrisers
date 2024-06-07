@@ -90,4 +90,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(UserWebsiteUrl::class);
     }
+
+    public function reporters()
+    {
+        return $this->hasMany(UserReport::class, 'reporter_id');
+    }
+
+    public function reports()
+    {
+        return $this->hasMany(UserReport::class, 'reported_user_id');
+    }
 }

@@ -85,4 +85,11 @@ Route::controller(\App\Http\Controllers\FollowerController::class)->group(functi
     });
 });
 
-
+/* User Report */
+Route::controller(\App\Http\Controllers\Report\UserReportController::class)->group(function () {
+    Route::prefix('report')->group(function () {
+        Route::middleware('auth:api')->group(function () {
+            Route::post('user', 'store');
+        });
+    });
+});
