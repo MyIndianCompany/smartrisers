@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Follower;
 use App\Models\Post;
 use App\Models\User;
+use App\Models\UserBlock;
 use App\Services\Posts\PostServices;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Http\Request;
@@ -40,10 +41,22 @@ class PostController extends Controller
     public function getPostsByAuthUsers(): \Illuminate\Http\JsonResponse
     {
         $authUserId = Auth::id();
-        $followedUserIds = Follower::where('follower_user_id', $authUserId)
-            ->pluck('following_user_id')
-            ->toArray();
-        $posts = $this->postServices->getPostsQuery()->get();
+
+        // Get IDs of users blocked by the authenticated user
+        $blockedUserIds = UserBlock::where('blocker_id', $authUserId)->pluck('blocked_id')->toArray();
+
+        // Get IDs of users who have blocked the authenticated user
+        $blockedByUserIds = UserBlock::where('blocked_id', $authUserId)->pluck('blocker_id')->toArray();
+
+        // Merge both arrays to get a list of all user IDs to exclude
+        $excludedUserIds = array_merge($blockedUserIds, $blockedByUserIds);
+
+        // Get the IDs of followed users
+        $followedUserIds = Follower::where('follower_user_id', $authUserId)->pluck('following_user_id')->toArray();
+
+        // Retrieve posts excluding those from blocked users
+        $posts = $this->postServices->getPostsQuery()->whereNotIn('user_id', $excludedUserIds)->get();
+
         $posts->each(function ($post) use ($authUserId, $followedUserIds) {
             $post->comment_count = $post->comments->count();
             $post->reply_count = $post->comments->flatMap->replies->count();
@@ -51,8 +64,9 @@ class PostController extends Controller
             $post->liked = $post->likes->contains('user_id', $authUserId);
             $post->followed = in_array($post->user->id, $followedUserIds);
             $post->is_owner = $post->user->id === $authUserId;
-            unset ($post->likes);
+            unset($post->likes);
         });
+
         return response()->json($posts, 201);
     }
 
@@ -70,18 +84,11 @@ class PostController extends Controller
 
     public function store(Request $request, PostServices $postService): \Illuminate\Http\JsonResponse
     {
-        $request->validate([
-//            'file' => 'required|mimes:mp4,mov,avi|max:102400',
-            'file' => 'required|mimes:mp4,mov,avi',
-        ]);
+        $request->validate(['file' => 'required|mimes:mp4,mov,avi']);
         try {
             DB::beginTransaction();
-            $user_id = auth()->id(); // Get the authenticated user's ID
-            $postService->uploadPost($request, $user_id); // Pass the user ID to the uploadPost method
-
-//            $user_id = auth()->id();
-//            $postService->uploadPost($request, $user_id);
-//            $user_id->profile->increment('post_count');
+            $user_id = auth()->id();
+            $postService->uploadPost($request, $user_id);
             DB::commit();
             return response()->json(['success' => 'Your post has been successfully uploaded!'], 201);
         } catch (\Exception $exception) {

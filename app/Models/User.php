@@ -100,4 +100,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(UserReport::class, 'reported_user_id');
     }
+
+    public function blockedUsers()
+    {
+        return $this->belongsToMany(User::class, 'user_blocks', 'blocker_id', 'blocked_id');
+    }
+
+    public function blockedByUsers()
+    {
+        return $this->belongsToMany(User::class, 'user_blocks', 'blocked_id', 'blocker_id');
+    }
 }

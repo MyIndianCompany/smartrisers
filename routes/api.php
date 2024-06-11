@@ -48,7 +48,7 @@ Route::controller(\App\Http\Controllers\UserController::class)->group(function (
 Route::controller(\App\Http\Controllers\Post\PostController::class)->group(function () {
     Route::prefix('post')->group(function () {
         Route::get('all', 'index');
-        Route::middleware('auth:api')->group(function () {
+        Route::middleware(['auth:api', 'check.blocked'])->group(function () {
             Route::get('user', 'getPosts');
             Route::get('auth/user', 'getPostsByAuthUsers');
             Route::post('upload','store');
@@ -91,5 +91,14 @@ Route::controller(\App\Http\Controllers\Report\UserReportController::class)->gro
         Route::middleware('auth:api')->group(function () {
             Route::post('user', 'store');
         });
+    });
+});
+
+
+/* User Blocked */
+Route::controller(\App\Http\Controllers\BlockController::class)->group(function () {
+    Route::middleware('auth:api')->group(function () {
+        Route::post('block/{id}', 'blockUser');
+        Route::post('unblock/{id}', 'unblockUser');
     });
 });
