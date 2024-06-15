@@ -11,6 +11,16 @@ use Illuminate\Support\Facades\DB;
 
 class UserReportController extends Controller
 {
+    public function index()
+    {
+        $report = UserReport::with([
+            'reportFiles',
+            'reporter:id,name,username,email,profile_picture',
+            'reported:id,name,username,email,profile_picture'])
+            ->get();
+        return response()->json($report);
+    }
+
     public function store(Request $request)
     {
         // Validate the incoming request
