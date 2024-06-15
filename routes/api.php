@@ -102,3 +102,11 @@ Route::controller(\App\Http\Controllers\BlockController::class)->group(function 
         Route::post('unblock/{id}', 'unblockUser');
     });
 });
+
+/* Notification */
+Route::controller(\App\Http\Controllers\NotificationController::class)->group(function ()  {
+    Route::middleware('auth:api')->group(function () {
+       Route::get('notification', 'index');
+        Route::post('/notifications/{id}/read', 'markAsRead');
+    });
+});

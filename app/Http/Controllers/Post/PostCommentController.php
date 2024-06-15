@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Post;
 
+use App\Events\CommentLikeNotification;
 use App\Http\Controllers\Controller;
 use App\Models\Post;
 use App\Models\PostComment;
@@ -39,6 +40,7 @@ class PostCommentController extends Controller
     public function commentLike(Request $request, PostComment $postComment): \Illuminate\Http\JsonResponse
     {
         try {
+            $user = Auth::user();
             $message = $this->postServices->likePostComment($postComment);
             return response()->json(['message' => $message], 201);
         } catch (\Exception $exception) {
