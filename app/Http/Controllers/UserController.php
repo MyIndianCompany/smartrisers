@@ -10,6 +10,7 @@ use App\Models\UserWebsiteUrl;
 use Carbon\Carbon;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary as CloudinaryLabs;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
@@ -393,6 +394,23 @@ class UserController extends Controller
         }
 
         return response()->json($response);
+    }
+
+    /**
+     * Delete the authenticated user's account.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function deleteAccount()
+    {
+        $user = Auth::user();
+
+        if ($user) {
+            $user->delete();
+            return response()->json(['message' => 'Account deleted successfully.'], 201);
+        }
+
+        return response()->json(['message' => 'User not authenticated.'], 401);
     }
 }
 

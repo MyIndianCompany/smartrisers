@@ -68,7 +68,7 @@ class User extends Authenticatable
 
     public function posts()
     {
-        return $this->hasMany(Post::class, 'post_id');
+        return $this->hasMany(Post::class);
     }
 
     public function likes()
@@ -109,5 +109,26 @@ class User extends Authenticatable
     public function blockedByUsers()
     {
         return $this->belongsToMany(User::class, 'user_blocks', 'blocked_id', 'blocker_id');
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::deleting(function ($user) {
+            $user->following()->detach();
+            $user->followers()->detach();
+            $user->posts()->each(function ($post) {
+                $post->delete();
+            });
+            $user->likes()->delete();
+            $user->commentLikes()->delete();
+            $user->profile()->delete();
+            $user->website()->delete();
+            $user->reporters()->delete();
+            $user->reports()->delete();
+            $user->blockedUsers()->detach();
+            $user->blockedByUsers()->detach();
+        });
     }
 }

@@ -40,6 +40,7 @@ Route::controller(\App\Http\Controllers\UserController::class)->group(function (
         Route::middleware('auth:api')->group(function () {
             Route::patch('{user}/status', 'updateStatus');
             Route::post('profile', 'updateProfile');
+            Route::delete('account', 'deleteAccount');
         });
     });
 });
