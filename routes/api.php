@@ -100,6 +100,7 @@ Route::controller(\App\Http\Controllers\Report\UserReportController::class)->gro
 /* User Blocked */
 Route::controller(\App\Http\Controllers\BlockController::class)->group(function () {
     Route::middleware('auth:api')->group(function () {
+        Route::get('block/list', 'getBlockedList');
         Route::post('block/{id}', 'blockUser');
         Route::post('unblock/{id}', 'unblockUser');
     });

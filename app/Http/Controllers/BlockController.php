@@ -44,4 +44,19 @@ class BlockController extends Controller
 
         return response()->json(['message' => 'User unblocked successfully'], 200);
     }
+
+    public function getBlockedList()
+    {
+        $user_id = Auth::id();
+        $user = User::find($user_id);
+
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+
+        $blockedUsers = $user->blockedUsers()->get();
+
+        return response()->json(['blocked_users' => $blockedUsers], 200);
+    }
+
 }
