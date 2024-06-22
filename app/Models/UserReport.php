@@ -13,11 +13,11 @@ class UserReport extends Model
     protected $fillable = [
         'reporter_id',
         'reported_user_id',
-        'report_description'
+        'report_description',
+        'status'
     ];
 
     protected $hidden = [
-        'created_at',
         'updated_at',
         'deleted_at'
     ];
