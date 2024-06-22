@@ -56,7 +56,7 @@ class BlockController extends Controller
 
         $blockedUsers = $user->blockedUsers()->get();
 
-        return response()->json(['blocked_users' => $blockedUsers], 200);
+        return response()->json($blockedUsers);
     }
 
 }
