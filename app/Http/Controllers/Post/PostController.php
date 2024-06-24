@@ -30,21 +30,21 @@ class PostController extends Controller
 
     public function getPostsByUsername($username): \Illuminate\Http\JsonResponse
     {
-        $authUserId = auth()->id();
+//        $authUserId = auth()->id();
         $user = User::where('username', $username)->first();
         if (!$user) {
             return response()->json(['message' => 'User not found'], 404);
         }
 
         // Check if the authenticated user has blocked this user
-        $isBlocked = DB::table('blocks')
-            ->where('blocker_id', $authUserId)
-            ->where('blocked_id', $user->id)
-            ->exists();
+//        $isBlocked = DB::table('blocks')
+//            ->where('blocker_id', $authUserId)
+//            ->where('blocked_id', $user->id)
+//            ->exists();
 
-        if ($isBlocked) {
-            return response()->json(['message' => 'User not found'], 404);
-        }
+//        if ($isBlocked) {
+//            return response()->json(['message' => 'User not found'], 404);
+//        }
 
         $posts = $this->postServices->getPostsQuery()->where('user_id', $user->id)->get();
         return response()->json($posts, 201);
