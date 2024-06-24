@@ -11,15 +11,31 @@ use Illuminate\Support\Facades\DB;
 
 class UserReportController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $status = $request->input('status');
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+
         $report = UserReport::with([
             'reportFiles',
             'reporter:id,name,username,email,profile_picture',
-            'reported:id,name,username,email,profile_picture'])
+            'reported:id,name,username,email,profile_picture'
+        ])
+            ->when($status, function ($query, $status) {
+                return $query->where('status', $status);
+            })
+            ->when($startDate, function ($query, $startDate) {
+                return $query->whereDate('created_at', '>=', $startDate);
+            })
+            ->when($endDate, function ($query, $endDate) {
+                return $query->whereDate('created_at', '<=', $endDate);
+            })
             ->get();
+
         return response()->json($report);
     }
+
 
     public function store(Request $request)
     {
