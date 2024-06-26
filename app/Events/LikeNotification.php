@@ -18,6 +18,8 @@ class LikeNotification
 
     public $user;
     public $post;
+    public $userProfilePicture;
+    public $postVideoUrl;
     /**
      * Create a new event instance.
      */
@@ -25,6 +27,8 @@ class LikeNotification
     {
         $this->user = $user;
         $this->post = $post;
+        $this->userProfilePicture = $user->profile->profile_picture;
+        $this->postVideoUrl = $post->file_url;
     }
 
     /**

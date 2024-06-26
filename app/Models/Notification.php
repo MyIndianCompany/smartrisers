@@ -19,4 +19,14 @@ class Notification extends Model
     protected $casts = [
         'data' => 'array',
     ];
+
+    public function likedByUser()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function getLikedByProfilePictureAttribute()
+    {
+        return $this->likedByUser ? $this->likedByUser->profile_picture : null;
+    }
 }

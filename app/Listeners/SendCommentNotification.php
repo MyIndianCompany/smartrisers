@@ -22,13 +22,17 @@ class SendCommentNotification
      */
     public function handle(CommentNotification $event): void
     {
+        $data = [
+            'commented_by' => $event->user->id,
+            'post_id' => $event->post->id,
+            'commented_by_profile_picture' => $event->user->profile->profile_picture, // Assuming profile_picture is accessed like this
+            'post_video_url' => $event->post->file_url,
+        ];
+
         Notification::create([
             'user_id' => $event->post->user_id,
             'type' => 'comment',
-            'data' => [
-                'commented_by' => $event->user->id,
-                'post_id' => $event->post->id,
-            ],
+            'data' => $data,
         ]);
     }
 }

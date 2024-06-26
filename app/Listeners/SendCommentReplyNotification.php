@@ -22,13 +22,17 @@ class SendCommentReplyNotification
      */
     public function handle(CommentReplyNotification $event): void
     {
+        $data = [
+            'comment_reply_by' => $event->user->id,
+            'post_id' => $event->post->id,
+            'comment_reply_by_profile_picture' => $event->user->profile->profile_picture, // Assuming profile_picture is accessed like this
+            'post_video_url' => $event->post->file_url,
+        ];
+
         Notification::create([
             'user_id' => $event->post->user_id,
             'type' => 'comment_reply',
-            'data' => [
-                'comment_reply_by' => $event->user->id,
-                'post_id' => $event->post->id,
-            ],
+            'data' => $data,
         ]);
     }
 }
