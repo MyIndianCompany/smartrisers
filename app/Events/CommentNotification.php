@@ -28,7 +28,7 @@ class CommentNotification
     public function __construct(User $user, Post $post, PostComment $comment)
     {
         $this->user = $user;
-        $this->username = $user->username;
+        $this->username = $user->profile->username;
         $this->post = $post;
         $this->comment = $comment;
     }

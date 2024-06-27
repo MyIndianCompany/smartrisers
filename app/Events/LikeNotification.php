@@ -29,7 +29,7 @@ class LikeNotification
         $this->user = $user;
         $this->post = $post;
         $this->userProfilePicture = $user->profile->profile_picture;
-        $this->username = $user->username;
+        $this->username = $user->profile->username;
         $this->postVideoUrl = $post->file_url;
     }
 
