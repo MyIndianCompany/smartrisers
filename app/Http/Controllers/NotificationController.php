@@ -22,6 +22,7 @@ class NotificationController extends Controller
             // Initialize additional fields to null
             $postVideoUrl = null;
             $likedByProfilePicture = null;
+            $likedByUsername = null;
 
             if (isset($data['post_id'])) {
                 // Fetch post details
@@ -33,6 +34,7 @@ class NotificationController extends Controller
                 // Fetch user profile picture
                 $user = User::with('profile')->find($data['liked_by']);
                 $likedByProfilePicture = $user && $user->profile ? $user->profile->profile_picture : null;
+                $likedByUsername = $user && $user->profile ? $user->profile->username : null;
             }
 
             Log::info('Notification Data:', $data);
@@ -41,7 +43,7 @@ class NotificationController extends Controller
                 'liked_by' => $data['liked_by'] ?? null,
                 'post_id' => $data['post_id'] ?? null,
                 'liked_by_profile_picture' => $likedByProfilePicture,
-                'username' => $data['username'] ?? null,
+                'username' => $likedByUsername,
                 'post_video_url' => $postVideoUrl,
                 'type' => $notification->type,
                 'created_at' => $notification->created_at,
