@@ -30,7 +30,7 @@ class SendLikeNotification
             'liked_by' => $event->user->id,
             'post_id' => $event->post->id,
             'liked_by_profile_picture' => $event->user->profile_picture,
-            'username' => $event->user->username,
+            'username' => $event->user->profile->username,
             'post_video_url' => $event->post->video_url,
         ];
 

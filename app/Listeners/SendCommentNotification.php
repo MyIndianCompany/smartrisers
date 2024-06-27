@@ -26,7 +26,7 @@ class SendCommentNotification
             'commented_by' => $event->user->id,
             'post_id' => $event->post->id,
             'commented_by_profile_picture' => $event->user->profile->profile_picture,
-            'username' => $event->user->username,
+            'username' => $event->user->profile->username,
             'post_video_url' => $event->post->file_url,
         ];
 
