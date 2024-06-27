@@ -20,10 +20,20 @@ class UserController extends Controller
         try {
             $user = auth()->user();
             DB::beginTransaction();
+            $profilePicture = $user->profile_picture;
             if ($request->has('profile_picture')) {
                 $file = $request->file('profile_picture');
                 if ($file) {
                     $filePath = $file->getRealPath();
+                    // Delete the old profile picture from Cloudinary
+                    if ($profilePicture) {
+                        try {
+                            $publicId = pathinfo(parse_url($profilePicture, PHP_URL_PATH), PATHINFO_FILENAME);
+                            CloudinaryLabs::destroy($publicId);
+                        } catch (\Exception $e) {
+                            return response()->json(['message' => 'Error deleting old profile picture', 'error' => $e->getMessage()]);
+                        }
+                    }
                     try {
                         $uploadResult = CloudinaryLabs::upload($filePath)->getSecurePath();
                         $profilePicture = $uploadResult;
