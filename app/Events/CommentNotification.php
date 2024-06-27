@@ -18,6 +18,7 @@ class CommentNotification
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $user;
+    public $username;
     public $post;
     public $comment;
 
@@ -27,6 +28,7 @@ class CommentNotification
     public function __construct(User $user, Post $post, PostComment $comment)
     {
         $this->user = $user;
+        $this->username = $user->username;
         $this->post = $post;
         $this->comment = $comment;
     }

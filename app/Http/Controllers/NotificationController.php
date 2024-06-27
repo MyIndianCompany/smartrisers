@@ -41,6 +41,7 @@ class NotificationController extends Controller
                 'liked_by' => $data['liked_by'] ?? null,
                 'post_id' => $data['post_id'] ?? null,
                 'liked_by_profile_picture' => $likedByProfilePicture,
+                'username' => $data['username'] ?? null,
                 'post_video_url' => $postVideoUrl,
                 'type' => $notification->type,
                 'created_at' => $notification->created_at,

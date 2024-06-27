@@ -29,8 +29,9 @@ class SendLikeNotification
         $data = [
             'liked_by' => $event->user->id,
             'post_id' => $event->post->id,
-            'liked_by_profile_picture' => $event->user->profile_picture, // Assuming this attribute exists
-            'post_video_url' => $event->post->video_url, // Assuming this attribute exists
+            'liked_by_profile_picture' => $event->user->profile_picture,
+            'username' => $event->user->username,
+            'post_video_url' => $event->post->video_url,
         ];
 
         Log::info('Notification Data:', $data); // Log the data for debugging

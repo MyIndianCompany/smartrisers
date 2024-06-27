@@ -25,7 +25,8 @@ class SendCommentReplyNotification
         $data = [
             'comment_reply_by' => $event->user->id,
             'post_id' => $event->post->id,
-            'comment_reply_by_profile_picture' => $event->user->profile->profile_picture, // Assuming profile_picture is accessed like this
+            'comment_reply_by_profile_picture' => $event->user->profile->profile_picture,
+            'username' => $event->user->username,
             'post_video_url' => $event->post->file_url,
         ];
 
