@@ -52,6 +52,7 @@ Route::controller(\App\Http\Controllers\Post\PostController::class)->group(funct
         Route::middleware(['auth:api', 'check.blocked'])->group(function () {
             Route::get('user', 'getPosts');
             Route::get('auth/user', 'getPostsByAuthUsers');
+            Route::get('{id}', 'show');
             Route::post('upload','store');
             Route::post('{post}/like', 'like');
             Route::post('{post}/comment', 'comment');

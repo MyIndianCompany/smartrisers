@@ -28,6 +28,15 @@ class PostController extends Controller
         return response()->json($posts, 201);
     }
 
+    public function show($id)
+    {
+        $post = Post::find($id);
+        if (!$post) {
+            return response()->json(['message' => 'Post not found'], 404);
+        }
+        return response()->json($post);
+    }
+
     public function getPostsByUsername($username): \Illuminate\Http\JsonResponse
     {
         $authUserId = auth()->id();
