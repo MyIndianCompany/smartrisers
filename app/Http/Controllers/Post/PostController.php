@@ -34,7 +34,8 @@ class PostController extends Controller
         if (!$post) {
             return response()->json(['message' => 'Post not found'], 404);
         }
-        return response()->json($post);
+        $getPost = $this->postServices->getPostsQuery()->where('id', $post->id)->first();
+        return response()->json($getPost);
     }
 
     public function getPostsByUsername($username): \Illuminate\Http\JsonResponse
