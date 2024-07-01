@@ -93,6 +93,7 @@ Route::controller(\App\Http\Controllers\Report\UserReportController::class)->gro
         Route::middleware('auth:api')->group(function () {
             Route::get('all', 'index');
             Route::post('user', 'store');
+            Route::put('{userReport}/status', 'updateReportStatus');
         });
     });
 });

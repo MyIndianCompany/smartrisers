@@ -83,4 +83,21 @@ class UserReportController extends Controller
             ], 422);
         }
     }
+
+    public function updateReportStatus(UserReport $userReport, Request $request)
+    {
+        // Validate the status input
+        $validated = $request->validate([
+            'status' => 'required|in:completed,pending'
+        ]);
+
+        // Update the report status
+        $userReport->update([
+            'status' => $validated['status']
+        ]);
+
+        return response()->json([
+            'message' => 'Report status successfully updated'
+        ]);
+    }
 }
