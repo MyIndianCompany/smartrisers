@@ -41,8 +41,9 @@ class UserReportController extends Controller
     {
         // Validate the incoming request
         $request->validate([
-            'reported_user_id' => 'exists:users,id',
-            'files.*' => 'file|mimes:jpg,jpeg,png,pdf,doc,docx,txt|max:2048' // Adjust mime types and size limit as needed
+            'reported_user_id' => 'required|exists:users,id',
+            'report_description' => 'required',
+            'files.*' => 'required|file|mimes:jpg,jpeg,png,pdf,doc,docx,txt|max:2048' // Adjust mime types and size limit as needed
         ]);
 
         try {
