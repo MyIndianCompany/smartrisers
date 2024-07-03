@@ -49,6 +49,11 @@ class UserReportController extends Controller
         try {
             DB::beginTransaction();
             $reporter = auth()->user()->id;
+            if ($reporter == $request->reported_user_id) {
+                return response()->json([
+                    'message' => "Unable to report yourself"
+                ], 422);
+            }
             $userReport = UserReport::create([
                 'reporter_id' => $reporter,
                 'reported_user_id' => $request->reported_user_id,
