@@ -31,6 +31,7 @@ class UserReportController extends Controller
             ->when($endDate, function ($query, $endDate) {
                 return $query->whereDate('created_at', '<=', $endDate);
             })
+            ->orderBy('id', 'DESC')
             ->get();
 
         return response()->json($report);
