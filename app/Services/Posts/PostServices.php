@@ -51,7 +51,16 @@ class PostServices
                     }
                 ])->limit(10); // Limit number of comments fetched
             }
-        ])->select('id', 'user_id', 'created_at');
+        ])->select(
+            'id',
+            'user_id',
+            'caption',
+            'original_file_name',
+            'file_url',
+            'public_id',
+            'like_count',
+            'comment_count',
+            'created_at');
     }
 
 
