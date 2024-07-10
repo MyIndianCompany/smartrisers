@@ -24,22 +24,36 @@ class PostServices
                 $query->select('id', 'name', 'username', 'profile_picture');
             },
             'comments' => function ($query) {
-                $query->whereNull('super_comment_id');
-            },
-            'comments.user' => function ($query) {
-                $query->select('id', 'name', 'username', 'profile_picture');
-            },
-            'comments.replies.user' => function ($query) {
-                $query->select('id', 'name', 'username', 'profile_picture');
-            },
-            'comments.replies.replies.user' => function ($query) {
-                $query->select('id', 'name', 'username', 'profile_picture');
-            },
-            'comments.replies.replies.replies.user' => function ($query) {
-                $query->select('id', 'name', 'username', 'profile_picture');
-            },
-        ]);
+                $query->whereNull('super_comment_id')->with([
+                    'user' => function ($query) {
+                        $query->select('id', 'name', 'username', 'profile_picture');
+                    },
+                    'replies' => function ($query) {
+                        $query->with([
+                            'user' => function ($query) {
+                                $query->select('id', 'name', 'username', 'profile_picture');
+                            },
+                            'replies' => function ($query) {
+                                $query->with([
+                                    'user' => function ($query) {
+                                        $query->select('id', 'name', 'username', 'profile_picture');
+                                    },
+                                    'replies' => function ($query) {
+                                        $query->with([
+                                            'user' => function ($query) {
+                                                $query->select('id', 'name', 'username', 'profile_picture');
+                                            }
+                                        ])->limit(5); // Limit number of nested replies fetched
+                                    }
+                                ])->limit(5); // Limit number of nested replies fetched
+                            }
+                        ])->limit(5); // Limit number of nested replies fetched
+                    }
+                ])->limit(10); // Limit number of comments fetched
+            }
+        ])->select('id', 'user_id', 'created_at');
     }
+
 
     public function uploadPost(Request $request, int $user_id)
     {

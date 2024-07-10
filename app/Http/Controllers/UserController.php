@@ -227,13 +227,10 @@ class UserController extends Controller
     {
         $currentYear = Carbon::now()->year;
         $currentMonth = Carbon::now()->month;
-
-        // Get parameters from the request
         $requestedYear = $request->input('year', null);
         $requestedMonth = $request->input('month', null);
         $requestedWeek = $request->input('week', null);
 
-        // Predefine month names
         $months = [
             1 => 'January',
             2 => 'February',
@@ -249,7 +246,6 @@ class UserController extends Controller
             12 => 'December'
         ];
 
-        // Predefine last 10 years
         $years = [];
         for ($i = 0; $i < 10; $i++) {
             $years[$currentYear - $i] = $currentYear - $i;
@@ -257,10 +253,9 @@ class UserController extends Controller
 
         $response = [];
 
-        // If week is provided, return weekly stats for that week
         if ($requestedWeek) {
             $usersByWeek = User::select(
-                DB::raw('WEEK(created_at, 1) as week'),  // Use mode 1 to start week on Monday
+                DB::raw('WEEK(created_at, 1) as week'),
                 DB::raw('COUNT(*) as count')
             )
                 ->where(DB::raw('WEEK(created_at, 1)'), $requestedWeek)
@@ -277,9 +272,7 @@ class UserController extends Controller
                     'count' => $usersByWeek[$requestedWeek]['count'] ?? 0
                 ]
             ];
-        }
-        // If month is provided, return monthly stats for that month
-        else if ($requestedMonth) {
+        } else if ($requestedMonth) {
             $usersByMonth = User::select(
                 DB::raw('MONTH(created_at) as month_number'),
                 DB::raw('COUNT(*) as count')
@@ -298,9 +291,7 @@ class UserController extends Controller
                     'count' => $usersByMonth[$requestedMonth]['count'] ?? 0
                 ]
             ];
-        }
-        // If year is provided, return monthly stats for that year
-        else if ($requestedYear) {
+        } else if ($requestedYear) {
             $monthlyStats = [];
             foreach ($months as $number => $name) {
                 $usersByMonth = User::select(
@@ -321,10 +312,7 @@ class UserController extends Controller
                 ];
             }
             $response['yearly'] = $monthlyStats;
-        }
-        // If no specific parameter is provided, return all stats
-        else {
-            // Monthly stats for the current year
+        } else {
             $usersByMonth = User::select(
                 DB::raw('MONTH(created_at) as month_number'),
                 DB::raw('COUNT(*) as count')
@@ -335,8 +323,6 @@ class UserController extends Controller
                 ->get()
                 ->keyBy('month_number')
                 ->toArray();
-
-            // Fill in the missing months with count 0
             $monthlyStats = [];
             foreach ($months as $number => $name) {
                 $monthlyStats[] = [
@@ -344,8 +330,6 @@ class UserController extends Controller
                     'count' => $usersByMonth[$number]['count'] ?? 0
                 ];
             }
-
-            // Yearly stats (last 10 years)
             $usersByYear = User::select(
                 DB::raw('YEAR(created_at) as year'),
                 DB::raw('COUNT(*) as count')
@@ -356,8 +340,6 @@ class UserController extends Controller
                 ->get()
                 ->keyBy('year')
                 ->toArray();
-
-            // Fill in the missing years with count 0
             $yearlyStats = [];
             foreach ($years as $year) {
                 $yearlyStats[] = [
@@ -365,10 +347,8 @@ class UserController extends Controller
                     'count' => $usersByYear[$year]['count'] ?? 0
                 ];
             }
-
-            // Weekly stats for the current month
             $usersByWeek = User::select(
-                DB::raw('WEEK(created_at, 1) as week'),  // Use mode 1 to start week on Monday
+                DB::raw('WEEK(created_at, 1) as week'),
                 DB::raw('COUNT(*) as count')
             )
                 ->whereMonth('created_at', $currentMonth)
@@ -378,16 +358,12 @@ class UserController extends Controller
                 ->get()
                 ->keyBy('week')
                 ->toArray();
-
-            // Get the weeks for the current month
             $weeksInMonth = [];
             $currentDate = Carbon::now()->startOfMonth();
             while ($currentDate->month == $currentMonth) {
                 $weeksInMonth[] = $currentDate->weekOfYear;
                 $currentDate->addWeek();
             }
-
-            // Fill in the missing weeks with count 0
             $weeklyStats = [];
             foreach ($weeksInMonth as $week) {
                 $weeklyStats[] = [
@@ -395,14 +371,12 @@ class UserController extends Controller
                     'count' => $usersByWeek[$week]['count'] ?? 0
                 ];
             }
-
             $response = [
                 'monthly' => $monthlyStats,
                 'yearly' => $yearlyStats,
                 'weekly' => $weeklyStats,
             ];
         }
-
         return response()->json($response);
     }
 
