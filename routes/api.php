@@ -27,6 +27,10 @@ Route::controller(\App\Http\Controllers\Auth\AuthController::class)->group(funct
            Route::post('logout','logout');
        });
    });
+    Route::prefix('password')->group(function () {
+        Route::post('forgot', 'forgotPassword');
+        Route::post('reset', 'resetPassword');
+    });
 });
 
 Route::controller(\App\Http\Controllers\UserController::class)->group(function () {
