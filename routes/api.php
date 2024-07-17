@@ -36,13 +36,13 @@ Route::controller(\App\Http\Controllers\Auth\AuthController::class)->group(funct
 Route::controller(\App\Http\Controllers\UserController::class)->group(function () {
     Route::prefix('user')->group(function () {
         Route::get('all', 'getAllUserProfile');
-        Route::get('post', 'getAllUserHasPosts');
         Route::get('count', 'getUserCounts');
         Route::get('new', 'getNewUsers');
         Route::get('{username}', 'userProfile');
         Route::get('{username}/followers', 'getFollowersByUsername');
         Route::get('{username}/followings', 'getFollowingsByUsername');
         Route::middleware('auth:api')->group(function () {
+            Route::get('post', 'getAllUserHasPosts');
             Route::patch('{user}/status', 'updateStatus');
             Route::post('profile', 'updateProfile');
             Route::delete('account', 'deleteAccount');

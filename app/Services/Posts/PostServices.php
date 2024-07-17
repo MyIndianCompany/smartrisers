@@ -19,7 +19,10 @@ class PostServices
 {
     public function getPostsQuery(): \Illuminate\Database\Eloquent\Builder
     {
-        return Post::with([
+        return Post::whereHas('user', function ($query) {
+            $query->where('status', 'active');
+        })
+        ->with([
             'user' => function ($query) {
                 $query->select('id', 'name', 'username', 'profile_picture');
             },
