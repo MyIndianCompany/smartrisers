@@ -399,7 +399,13 @@ class UserController extends Controller
 
     public function getAllUserHasPosts()
     {
-        return User::where('status', '=' ,'active')->has('posts')->select('id', 'name', 'username', 'email', 'profile_picture')->get();
+        return User::where('status','active')
+            ->has('posts')
+            ->select('id', 'name', 'username', 'email', 'profile_picture')
+            ->with('posts', function ($query) {
+                $query->select('id', 'user_id', 'caption', 'original_file_name', 'file_url', 'like_count', 'comment_count');
+            })
+            ->get();
     }
 }
 
