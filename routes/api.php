@@ -36,6 +36,7 @@ Route::controller(\App\Http\Controllers\Auth\AuthController::class)->group(funct
 Route::controller(\App\Http\Controllers\UserController::class)->group(function () {
     Route::prefix('user')->group(function () {
         Route::get('all', 'getAllUserProfile');
+        Route::get('post', 'getAllUserHasPosts');
         Route::get('count', 'getUserCounts');
         Route::get('new', 'getNewUsers');
         Route::get('{username}', 'userProfile');
