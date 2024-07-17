@@ -42,7 +42,7 @@ Route::controller(\App\Http\Controllers\UserController::class)->group(function (
         Route::get('{username}/followers', 'getFollowersByUsername');
         Route::get('{username}/followings', 'getFollowingsByUsername');
         Route::middleware('auth:api')->group(function () {
-            Route::get('post', 'getAllUserHasPosts');
+            Route::get('post/all', 'getAllUserHasPosts');
             Route::patch('{user}/status', 'updateStatus');
             Route::post('profile', 'updateProfile');
             Route::delete('account', 'deleteAccount');
