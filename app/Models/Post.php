@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 
+/**
+ * @method static where(string $string, \Closure $param)
+ */
 class Post extends Model
 {
     use HasFactory, SoftDeletes;

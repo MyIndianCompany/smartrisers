@@ -19,20 +19,24 @@ class PostServices
 {
     public function getPostsQuery(): \Illuminate\Database\Eloquent\Builder
     {
+        $authUserId = auth()->id();
+
         return Post::whereHas('user', function ($query) {
             $query->where('status', 'active');
         })
-        ->with([
-            'user' => function ($query) {
-                $query->select('id', 'name', 'username', 'profile_picture');
-            },
-            'comments' => function ($query) {
-                $query->whereNull('super_comment_id')->with([
-                    'user' => function ($query) {
-                        $query->select('id', 'name', 'username', 'profile_picture');
-                    },
-                    'replies' => function ($query) {
-                        $query->with([
+            ->whereHas('user.profile', function ($query) {
+                $query->where('is_private', false);
+            })
+            ->orWhereHas('user.followers', function ($query) use ($authUserId) {
+                $query->where('follower_user_id', $authUserId);
+            })
+            ->with([
+                'user' => function ($query) {
+                    $query->select('id', 'name', 'username', 'profile_picture');
+                },
+                'comments' => function ($query) {
+                    $query->whereNull('super_comment_id')
+                        ->with([
                             'user' => function ($query) {
                                 $query->select('id', 'name', 'username', 'profile_picture');
                             },
@@ -50,21 +54,21 @@ class PostServices
                                     }
                                 ])->limit(5); // Limit number of nested replies fetched
                             }
-                        ])->limit(5); // Limit number of nested replies fetched
-                    }
-                ])->limit(10); // Limit number of comments fetched
-            }
-        ])->select(
-            'id',
-            'user_id',
-            'caption',
-            'original_file_name',
-            'file_url',
-            'public_id',
-            'like_count',
-            'comment_count',
-            'created_at');
+                        ])->limit(10); // Limit number of comments fetched
+                }
+            ])->select(
+                'id',
+                'user_id',
+                'caption',
+                'original_file_name',
+                'file_url',
+                'public_id',
+                'like_count',
+                'comment_count',
+                'created_at'
+            );
     }
+
 
 
     public function uploadPost(Request $request, int $user_id)

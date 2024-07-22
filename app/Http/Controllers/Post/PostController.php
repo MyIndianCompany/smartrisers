@@ -63,22 +63,11 @@ class PostController extends Controller
     public function getPostsByAuthUsers(): \Illuminate\Http\JsonResponse
     {
         $authUserId = Auth::id();
-
-        // Get IDs of users blocked by the authenticated user
         $blockedUserIds = UserBlock::where('blocker_id', $authUserId)->pluck('blocked_id')->toArray();
-
-        // Get IDs of users who have blocked the authenticated user
         $blockedByUserIds = UserBlock::where('blocked_id', $authUserId)->pluck('blocker_id')->toArray();
-
-        // Merge both arrays to get a list of all user IDs to exclude
         $excludedUserIds = array_merge($blockedUserIds, $blockedByUserIds);
-
-        // Get the IDs of followed users
         $followedUserIds = Follower::where('follower_user_id', $authUserId)->pluck('following_user_id')->toArray();
-
-        // Retrieve posts excluding those from blocked users
         $posts = $this->postServices->getPostsQuery()->whereNotIn('user_id', $excludedUserIds)->get();
-
         $posts->each(function ($post) use ($authUserId, $followedUserIds) {
             $post->comment_count = $post->comments->count();
             $post->reply_count = $post->comments->flatMap->replies->count();
@@ -88,7 +77,6 @@ class PostController extends Controller
             $post->is_owner = $post->user->id === $authUserId;
             unset($post->likes);
         });
-
         return response()->json($posts, 201);
     }
 
