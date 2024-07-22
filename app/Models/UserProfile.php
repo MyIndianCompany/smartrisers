@@ -21,8 +21,7 @@ class UserProfile extends Model
         'post_count',
         'follower_count',
         'following_count',
-        'created_at',
-        'updated_at'
+        'is_private'
     ];
 
     protected $hidden = ['updated_at'];

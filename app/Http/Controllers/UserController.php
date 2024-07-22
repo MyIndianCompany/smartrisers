@@ -407,5 +407,19 @@ class UserController extends Controller
             })
             ->get();
     }
+
+    public function updateUserIsPrivate(Request $request)
+    {
+        $request->validate([
+            'is_private' => 'boolean',
+        ]);
+        $user = auth()->user()->profile;
+        $user->update([
+            'is_private' => $request->is_private
+        ]);
+        return response()->json([
+            "message" => "Profile private updated successfully!"
+        ], 201);
+    }
 }
 
