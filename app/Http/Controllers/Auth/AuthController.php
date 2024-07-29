@@ -8,6 +8,7 @@ use App\Models\PasswordResetToken;
 use App\Models\User;
 use App\Models\UserProfile;
 use App\Services\AuthService\AuthServices;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -34,6 +35,7 @@ class AuthController extends Controller
                 'message' => $validator->errors()->first(),
             ], 422);
         }
+        $otp = rand(100000, 999999);
         try {
             DB::beginTransaction();
             $username = $authServices->username($request->input('name'));
@@ -42,6 +44,8 @@ class AuthController extends Controller
                 'username' => $username,
                 'email' => $request->input('email'),
                 'password' => bcrypt($request->input('password')),
+                'otp' => $otp,
+                'otp_created_at' => now(),
             ]);
             UserProfile::create([
                 'user_id' => $user->id,
@@ -50,6 +54,11 @@ class AuthController extends Controller
                 'email' => $request->input('email'),
             ]);
             $token = $authServices->generateAccessToken($user);
+            // Send OTP to the user's email
+            Mail::send('auth.verify_email', ['otp' => $otp], function($message) use ($request) {
+                $message->to($request->email)
+                    ->subject('Email Verification OTP');
+            });
             DB::commit();
             return $authServices->respondWithToken($user, $token, 'User registered successfully');
         } catch (\Exception $exception) {
@@ -148,6 +157,32 @@ class AuthController extends Controller
             $user->save();
             PasswordResetToken::where('email', $request->email)->delete();
             return response()->json(["message" => "Your password has been reset successfully."], 201);
+        }
+    }
+
+    public function verifyEmail(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|string|email',
+            'otp' => 'required|string',
+        ]);
+
+        $user = User::where('email', $request->email)->where('otp', $request->otp)->first();
+
+        if ($user) {
+            $otpCreationTime = Carbon::parse($user->otp_created_at);
+            if ($otpCreationTime->diffInMinutes(now()) <= 5) {
+                $user->email_verified_at = now();
+                $user->otp = null;
+                $user->otp_created_at = null;
+                $user->save();
+
+                return response()->json(['message' => 'Email verified successfully.'], 201);
+            } else {
+                return response()->json(['message' => 'OTP has expired.'], 400);
+            }
+        } else {
+            return response()->json(['message' => 'Invalid OTP or email.'], 400);
         }
     }
 }

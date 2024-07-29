@@ -23,6 +23,7 @@ Route::controller(\App\Http\Controllers\Auth\AuthController::class)->group(funct
    Route::prefix('auth')->group(function () {
       Route::post('register', 'register');
       Route::post('login', 'login');
+      Route::post('verify/email', 'verifyEmail');
        Route::middleware('auth:api')->group(function () {
            Route::post('logout','logout');
        });
