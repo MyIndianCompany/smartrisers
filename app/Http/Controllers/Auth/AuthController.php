@@ -107,18 +107,22 @@ class AuthController extends Controller
 
         try {
             $user = User::where('email', $request->email)->first();
+            $otp = rand(100000, 999999);
             if ($user) {
-                $query = PasswordResetToken::updateOrCreate(
+                PasswordResetToken::updateOrCreate(
                     ['email' => $request->email],
                     [
                         'email' => $request->email,
-                        'token' => Str::random(60),
+                        'token' => $otp,
                         'created_at' => now()
                     ]
                 );
+                Mail::send('auth.forgot_password_token', ['otp' => $otp], function($message) use ($request) {
+                    $message->to($request->email)
+                        ->subject('Forgot Password OTP');
+                });
                 return response()->json([
-                    'message' => 'Please submit your new password.',
-                    'token' => $query->token
+                    'message' => 'OTP has been sent to your email.',
                 ], 201);
             } else {
                 return response()->json([
@@ -133,30 +137,43 @@ class AuthController extends Controller
         }
     }
 
-    public function resetPassword(Request $request)
-    {
+    public function resetPassword(Request $request) {
         $request->validate([
-            'token' => 'required|string',
-            'email' => 'required|email',
-            'password' => 'required|string|confirmed|min:8',
+            'email' => 'required|email|exists:users,email',
+            'otp' => 'required|digits:6',
+            'password' => 'required|min:8|confirmed'
         ]);
 
-        $query = PasswordResetToken::where([
-            ['token', $request->token],
-            ['email', $request->email]
-        ])->first();
+        try {
+            $tokenData = PasswordResetToken::where('email', $request->email)->where('token', $request->otp)->first();
 
-        if (!$query) {
-            return response()->json(["message" => "Invalid or expired password reset token."], 404);
-        }
+            if ($tokenData) {
+                $user = User::where('email', $request->email)->first();
+                if ($user) {
+                    $user->password = bcrypt($request->password);
+                    $user->save();
 
-        $user = User::where('email', $request->email)->first();
+                    // Optionally delete the token record
+                    PasswordResetToken::where('email', $request->email)->delete();
 
-        if ($user) {
-            $user->password = Hash::make($request->password);
-            $user->save();
-            PasswordResetToken::where('email', $request->email)->delete();
-            return response()->json(["message" => "Your password has been reset successfully."], 201);
+                    return response()->json([
+                        'message' => 'Password has been reset successfully.'
+                    ], 201);
+                } else {
+                    return response()->json([
+                        'message' => 'User not found'
+                    ], 404);
+                }
+            } else {
+                return response()->json([
+                    'message' => 'Invalid OTP or email.'
+                ], 400);
+            }
+        } catch (\Exception $exception) {
+            return response()->json([
+                'message' => 'Unable to reset password. Please try again later.',
+                'error' => $exception->getMessage()
+            ], 500);
         }
     }
 
