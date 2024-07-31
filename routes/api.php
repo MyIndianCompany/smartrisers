@@ -24,12 +24,14 @@ Route::controller(\App\Http\Controllers\Auth\AuthController::class)->group(funct
       Route::post('register', 'register');
       Route::post('login', 'login');
       Route::post('verify/email', 'verifyEmail');
+       Route::post('verify/email/resend/otp', 'verifyEmailResendOtp');
        Route::middleware('auth:api')->group(function () {
            Route::post('logout','logout');
        });
    });
     Route::prefix('password')->group(function () {
         Route::post('forgot', 'forgotPassword');
+        Route::post('forgot/resend/otp', 'forgotPasswordResendOtp');
         Route::post('reset', 'resetPassword');
     });
 });

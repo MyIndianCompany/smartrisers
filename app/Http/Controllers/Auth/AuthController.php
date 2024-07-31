@@ -35,7 +35,7 @@ class AuthController extends Controller
                 'message' => $validator->errors()->first(),
             ], 422);
         }
-        $otp = rand(100000, 999999);
+        $otp = random_int(100000, 999999);
         try {
             DB::beginTransaction();
             $username = $authServices->username($request->input('name'));
@@ -43,7 +43,7 @@ class AuthController extends Controller
                 'name' => $request->input('name'),
                 'username' => $username,
                 'email' => $request->input('email'),
-                'password' => bcrypt($request->input('password')),
+                'password' => Hash::make($request->input('password')),
                 'otp' => $otp,
                 'otp_created_at' => now(),
             ]);
@@ -53,51 +53,111 @@ class AuthController extends Controller
                 'username' => $username,
                 'email' => $request->input('email'),
             ]);
-            $token = $authServices->generateAccessToken($user);
-            // Send OTP to the user's email
             Mail::send('auth.verify_email', ['otp' => $otp], function($message) use ($request) {
                 $message->to($request->email)
                     ->subject('Email Verification OTP');
             });
             DB::commit();
-            return $authServices->respondWithToken($user, $token, 'User registered successfully');
+            return response()->json([
+                "message" => "User registered successfully"
+            ]);
         } catch (\Exception $exception) {
             DB::rollBack();
             report($exception);
             return response()->json([
                 'message' => 'Oops! Something went wrong. Please try again later.',
-                'error' => $exception->getMessage()
             ], 401);
         }
     }
 
     public function login(Request $request)
     {
-        $credentials = $request->only('username_or_email', 'password');
+        $validator = Validator::make($request->all(), [
+            'username_or_email' => 'required',
+            'password' => 'required',
+        ]);
 
+        if ($validator->fails()) {
+            return response()->json([
+                'error' => $validator->errors()->first(),
+            ], 422);
+        }
+
+        $credentials = $request->only('username_or_email', 'password');
         $field = filter_var($credentials['username_or_email'], FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
         $credentials[$field] = $credentials['username_or_email'];
         unset($credentials['username_or_email']);
 
-        if (Auth::attempt($credentials)) {
-            $user = Auth::user();
-            $token = $user->createToken('API Token')->accessToken;
+        $user = User::where($field, $credentials[$field])->first();
 
+        if ($user && !$user->email_verified_at) {
+            return response()->json(['error' => 'Email not verified'], 401);
+        }
+
+        if ($user && Hash::check($credentials['password'], $user->password)) {
+            $token = $user->createToken('API Token')->accessToken;
+            Auth::login($user);
             return response()->json([
                 'message' => 'Successfully logged in',
                 'user' => auth()->user()->only(['name', 'username', 'email']),
                 'token' => $token
             ], 201);
         }
-
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
     public function logout()
     {
-        auth()->user()->token()->revoke();
-
+//        auth()->user()->token()->revoke();
+        auth()->user()->currentAccessToken()->delete();
         return response()->json(['message' => 'Successfully logged out'], 201);
+    }
+
+    public function verifyEmail(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|string|email',
+            'otp' => 'required|string',
+        ]);
+
+        $user = User::where('email', $request->email)->where('otp', $request->otp)->first();
+
+        if ($user) {
+            $otpCreationTime = Carbon::parse($user->otp_created_at);
+            if ($otpCreationTime->diffInMinutes(now()) <= 60) {
+                $user->email_verified_at = now();
+                $user->otp = null;
+                $user->otp_created_at = null;
+                $user->save();
+
+                return response()->json(['message' => 'Email verified successfully.'], 201);
+            } else {
+                return response()->json(['message' => 'OTP has expired.'], 400);
+            }
+        } else {
+            return response()->json(['message' => 'Invalid OTP or email.'], 400);
+        }
+    }
+
+    public function verifyEmailResendOtp(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|string|email',
+        ]);
+        $user = User::where('email', $request->email)->first();
+        if ($user) {
+            $newOtp = random_int(100000, 999999);
+            $user->otp = $newOtp;
+            $user->otp_created_at = now();
+            $user->save();
+            Mail::send('auth.verify_email', ['otp' => $newOtp], function($message) use ($user) {
+                $message->to($user->email)
+                    ->subject('Email Verification OTP');
+            });
+            return response()->json(['message' => 'OTP has been resent.'], 200);
+        } else {
+            return response()->json(['message' => 'Email not found.'], 404);
+        }
     }
 
     public function forgotPassword(Request $request) {
@@ -107,7 +167,7 @@ class AuthController extends Controller
 
         try {
             $user = User::where('email', $request->email)->first();
-            $otp = rand(100000, 999999);
+            $otp = random_int(100000, 999999);
             if ($user) {
                 PasswordResetToken::updateOrCreate(
                     ['email' => $request->email],
@@ -130,9 +190,9 @@ class AuthController extends Controller
                 ], 404);
             }
         } catch (\Exception $exception) {
+            report($exception);
             return response()->json([
-                'message' => 'Unable to send reset password email. Please try again later.',
-                'error' => $exception->getMessage()
+                'message' => 'Unable to send reset password email. Please try again later.'
             ], 500);
         }
     }
@@ -148,21 +208,26 @@ class AuthController extends Controller
             $tokenData = PasswordResetToken::where('email', $request->email)->where('token', $request->otp)->first();
 
             if ($tokenData) {
-                $user = User::where('email', $request->email)->first();
-                if ($user) {
-                    $user->password = bcrypt($request->password);
-                    $user->save();
+                $otpCreationTime = Carbon::parse($tokenData->created_at);
+                if ($otpCreationTime->diffInMinutes(now()) <= 60) {
+                    $user = User::where('email', $request->email)->first();
+                    if ($user) {
+                        $user->password = Hash::make($request->password);
+                        $user->save();
 
-                    // Optionally delete the token record
-                    PasswordResetToken::where('email', $request->email)->delete();
-
-                    return response()->json([
-                        'message' => 'Password has been reset successfully.'
-                    ], 201);
+                        PasswordResetToken::where('email', $request->email)->delete();
+                        return response()->json([
+                            'message' => 'Password has been reset successfully.'
+                        ], 201);
+                    } else {
+                        return response()->json([
+                            'message' => 'User not found'
+                        ], 404);
+                    }
                 } else {
                     return response()->json([
-                        'message' => 'User not found'
-                    ], 404);
+                        'message' => 'OTP has expired.'
+                    ], 400);
                 }
             } else {
                 return response()->json([
@@ -170,36 +235,31 @@ class AuthController extends Controller
                 ], 400);
             }
         } catch (\Exception $exception) {
+            report($exception);
             return response()->json([
-                'message' => 'Unable to reset password. Please try again later.',
-                'error' => $exception->getMessage()
+                'message' => 'Unable to reset password. Please try again later.'
             ], 500);
         }
     }
 
-    public function verifyEmail(Request $request)
+    public function forgotPasswordResendOtp(Request $request)
     {
         $request->validate([
             'email' => 'required|string|email',
-            'otp' => 'required|string',
         ]);
-
-        $user = User::where('email', $request->email)->where('otp', $request->otp)->first();
-
+        $user = User::where('email', $request->email)->first();
         if ($user) {
-            $otpCreationTime = Carbon::parse($user->otp_created_at);
-            if ($otpCreationTime->diffInMinutes(now()) <= 5) {
-                $user->email_verified_at = now();
-                $user->otp = null;
-                $user->otp_created_at = null;
-                $user->save();
-
-                return response()->json(['message' => 'Email verified successfully.'], 201);
-            } else {
-                return response()->json(['message' => 'OTP has expired.'], 400);
-            }
+            $newOtp = random_int(100000, 999999);
+            $user->otp = $newOtp;
+            $user->otp_created_at = now();
+            $user->save();
+            Mail::send('auth.forgot_password_token', ['otp' => $newOtp], function($message) use ($user) {
+                $message->to($user->email)
+                    ->subject('Forgot Password OTP');
+            });
+            return response()->json(['message' => 'OTP has been resent.'], 200);
         } else {
-            return response()->json(['message' => 'Invalid OTP or email.'], 400);
+            return response()->json(['message' => 'Email not found.'], 404);
         }
     }
 }
