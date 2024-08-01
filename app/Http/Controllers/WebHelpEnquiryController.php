@@ -11,7 +11,9 @@ class WebHelpEnquiryController extends Controller
 {
     public function index()
     {
-        return WebHelpEnquiry::select('email', 'message', 'created_at')->get();
+        return WebHelpEnquiry::select('email', 'message', 'created_at')
+            ->orderBy('id', 'DESC')
+            ->get();
     }
 
     public function store(Request $request)
