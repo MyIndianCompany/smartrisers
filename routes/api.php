@@ -124,3 +124,11 @@ Route::controller(\App\Http\Controllers\NotificationController::class)->group(fu
         Route::post('/notifications/{id}/read', 'markAsRead');
     });
 });
+
+
+/* Web Help Enquiry */
+
+Route::controller(\App\Http\Controllers\WebHelpEnquiryController::class)->group(function () {
+    Route::get('enquiries', 'index');
+    Route::post('enquiry', 'store');
+});
