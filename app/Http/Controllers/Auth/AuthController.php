@@ -201,7 +201,7 @@ class AuthController extends Controller
         $request->validate([
             'email' => 'required|email|exists:users,email',
             'otp' => 'required|digits:6',
-            'password' => 'required|min:8|confirmed'
+            'password' => 'min:8|confirmed'
         ]);
 
         try {
@@ -214,8 +214,7 @@ class AuthController extends Controller
                     if ($user) {
                         $user->password = Hash::make($request->password);
                         $user->save();
-
-                        PasswordResetToken::where('email', $request->email)->delete();
+//                        PasswordResetToken::where('email', $request->email)->delete();
                         return response()->json([
                             'message' => 'Password has been reset successfully.'
                         ], 201);
