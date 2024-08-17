@@ -11,7 +11,7 @@ use Laravel\Passport\HasApiTokens;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
-    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
+    use HasApiTokens, HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -117,8 +117,13 @@ class User extends Authenticatable implements MustVerifyEmail
         parent::boot();
 
         static::deleting(function ($user) {
+            // Detach relationships
             $user->following()->detach();
             $user->followers()->detach();
+            $user->blockedUsers()->detach();
+            $user->blockedByUsers()->detach();
+
+            // Delete related records
             $user->posts()->each(function ($post) {
                 $post->delete();
             });
@@ -128,8 +133,6 @@ class User extends Authenticatable implements MustVerifyEmail
             $user->website()->delete();
             $user->reporters()->delete();
             $user->reports()->delete();
-            $user->blockedUsers()->detach();
-            $user->blockedByUsers()->detach();
         });
     }
 }
