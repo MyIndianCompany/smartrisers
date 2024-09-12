@@ -22,13 +22,15 @@ class PostServices
         $authUserId = auth()->id();
 
         return Post::whereHas('user', function ($query) {
-            $query->where('status', 'active');
+            $query->where('status', 'active')
+                ->whereHas('profile', function ($query) {
+                    $query->where('is_private', false);
+                });
         })
-            ->whereHas('user.profile', function ($query) {
-                $query->where('is_private', false);
-            })
-            ->orWhereHas('user.followers', function ($query) use ($authUserId) {
-                $query->where('follower_user_id', $authUserId);
+            ->orWhere(function ($query) use ($authUserId) {
+                $query->whereHas('user.followers', function ($query) use ($authUserId) {
+                    $query->where('follower_user_id', $authUserId);
+                });
             })
             ->with([
                 'user' => function ($query) {
@@ -116,19 +118,19 @@ class PostServices
     }
 
 
-//    public function addComment(Post $post, $comment)
-//    {
-//        $user = Auth::user();
-//        DB::beginTransaction();
-//        $comment = PostComment::create([
-//            'post_id' => $post->id,
-//            'user_id' => $user->id,
-//            'comment' => $comment
-//        ]);
-//        $post->update(['comment_count' => $post->comments()->count()]);
-//        DB::commit();
-//        return $comment;
-//    }
+    //    public function addComment(Post $post, $comment)
+    //    {
+    //        $user = Auth::user();
+    //        DB::beginTransaction();
+    //        $comment = PostComment::create([
+    //            'post_id' => $post->id,
+    //            'user_id' => $user->id,
+    //            'comment' => $comment
+    //        ]);
+    //        $post->update(['comment_count' => $post->comments()->count()]);
+    //        DB::commit();
+    //        return $comment;
+    //    }
 
     public function addComment(Post $post, $comment)
     {
@@ -177,16 +179,16 @@ class PostServices
         }
     }
 
-//    public function likePost(Post $post)
-//    {
-//        $user = Auth::user();
-//        DB::beginTransaction();
-//        $like = $user->likes()->where('post_id', $post->id)->first();
-//        $like ? $like->delete() : $user->likes()->create(['post_id' => $post->id]);
-//        $post->update(['like_count' => $post->likes()->count()]);
-//        DB::commit();
-//        return $like ? 'Post unliked successfully.' : 'Post liked successfully.';
-//    }
+    //    public function likePost(Post $post)
+    //    {
+    //        $user = Auth::user();
+    //        DB::beginTransaction();
+    //        $like = $user->likes()->where('post_id', $post->id)->first();
+    //        $like ? $like->delete() : $user->likes()->create(['post_id' => $post->id]);
+    //        $post->update(['like_count' => $post->likes()->count()]);
+    //        DB::commit();
+    //        return $like ? 'Post unliked successfully.' : 'Post liked successfully.';
+    //    }
 
     public function likePost(Post $post)
     {
