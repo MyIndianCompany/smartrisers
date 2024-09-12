@@ -27,11 +27,11 @@ class PostServices
                     $query->where('is_private', false);
                 });
         })
-            ->orWhere(function ($query) use ($authUserId) {
-                $query->whereHas('user.followers', function ($query) use ($authUserId) {
-                    $query->where('follower_user_id', $authUserId);
-                });
-            })
+            // ->orWhere(function ($query) use ($authUserId) {
+            //     $query->whereHas('user.followers', function ($query) use ($authUserId) {
+            //         $query->where('follower_user_id', $authUserId);
+            //     });
+            // })
             ->with([
                 'user' => function ($query) {
                     $query->select('id', 'name', 'username', 'profile_picture');
