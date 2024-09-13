@@ -20,15 +20,15 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 /* User Authentication */
 Route::controller(\App\Http\Controllers\Auth\AuthController::class)->group(function () {
-   Route::prefix('auth')->group(function () {
-      Route::post('register', 'register');
-      Route::post('login', 'login');
-      Route::post('verify/email', 'verifyEmail');
-       Route::post('verify/email/resend/otp', 'verifyEmailResendOtp');
-       Route::middleware('auth:api')->group(function () {
-           Route::post('logout','logout');
-       });
-   });
+    Route::prefix('auth')->group(function () {
+        Route::post('register', 'register');
+        Route::post('login', 'login');
+        Route::post('verify/email', 'verifyEmail');
+        Route::post('verify/email/resend/otp', 'verifyEmailResendOtp');
+        Route::middleware('auth:api')->group(function () {
+            Route::post('logout', 'logout');
+        });
+    });
     Route::prefix('password')->group(function () {
         Route::post('forgot', 'forgotPassword');
         Route::post('forgot/resend/otp', 'forgotPasswordResendOtp');
@@ -41,10 +41,11 @@ Route::controller(\App\Http\Controllers\UserController::class)->group(function (
         Route::get('all', 'getAllUserProfile');
         Route::get('count', 'getUserCounts');
         Route::get('new', 'getNewUsers');
-        Route::get('{username}', 'userProfile');
+        // Route::get('{username}', 'userProfile');
         Route::get('{username}/followers', 'getFollowersByUsername');
         Route::get('{username}/followings', 'getFollowingsByUsername');
         Route::middleware('auth:api')->group(function () {
+            Route::get('{username}', 'userProfile');
             Route::get('post/all', 'getAllUserHasPosts');
             Route::post('profile', 'updateProfile');
             Route::patch('{user}/status', 'updateStatus');
@@ -62,7 +63,7 @@ Route::controller(\App\Http\Controllers\Post\PostController::class)->group(funct
             Route::get('user', 'getPosts');
             Route::get('auth/user', 'getPostsByAuthUsers');
             Route::get('{id}', 'show');
-            Route::post('upload','store');
+            Route::post('upload', 'store');
             Route::post('{post}/like', 'like');
             Route::post('{post}/comment', 'comment');
             Route::post('comment/{postComment}/like', 'commentLike');
@@ -118,9 +119,9 @@ Route::controller(\App\Http\Controllers\BlockController::class)->group(function 
 });
 
 /* Notification */
-Route::controller(\App\Http\Controllers\NotificationController::class)->group(function ()  {
+Route::controller(\App\Http\Controllers\NotificationController::class)->group(function () {
     Route::middleware('auth:api')->group(function () {
-       Route::get('notification', 'index');
+        Route::get('notification', 'index');
         Route::post('/notifications/{id}/read', 'markAsRead');
     });
 });
