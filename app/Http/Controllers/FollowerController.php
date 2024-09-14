@@ -72,6 +72,57 @@ class FollowerController extends Controller
         }
     }
 
+    public function unfollow(User $user): \Illuminate\Http\JsonResponse
+    {
+        try {
+            $currentUser = auth()->user();
+
+            if ($currentUser->id === $user->id) {
+                return response()->json(['message' => 'You cannot unfollow yourself.'], 400);
+            }
+
+            if (!$currentUser->following()->where('following_user_id', $user->id)->exists()) {
+                return response()->json(['message' => 'You are not following this user.'], 400);
+            }
+
+            // Eager load the 'profile' relationship for both users
+            $currentUser->load('profile');
+            $user->load('profile');
+
+            DB::beginTransaction();
+
+            $currentUser->following()->detach($user->id);
+
+            // Check if 'profile' relationship is loaded for $currentUser
+            if ($currentUser->profile) {
+                $currentUser->profile->decrement('following_count');
+            } else {
+                throw new \Exception('Profile not loaded for current user.');
+            }
+
+            // Check if 'profile' relationship is loaded for $user
+            if ($user->profile) {
+                $user->profile->decrement('follower_count');
+            } else {
+                throw new \Exception('Profile not loaded for the user being unfollowed.');
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'User unfollowed successfully'
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            report($e);
+            Log::error('Unfollow error: ' . $e->getMessage() . ' ' . $e->getTraceAsString());
+            return response()->json([
+                'message' => 'An error occurred while trying to unfollow the user.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function following(): \Illuminate\Http\JsonResponse
     {
         $following = auth()->user()->following()->select(['users.id', 'users.name', 'users.username', 'users.profile_picture'])->get();

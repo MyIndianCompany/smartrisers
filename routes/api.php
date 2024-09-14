@@ -94,6 +94,7 @@ Route::controller(\App\Http\Controllers\FollowerController::class)->group(functi
         Route::get('/following', 'following');
         Route::get('/followers', 'followers');
         Route::post('/follow/{user}', 'follow');
+        Route::delete('/unfollow/{user}', 'unfollow');
     });
 });
 
