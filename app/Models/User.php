@@ -43,7 +43,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'otp',
         'otp_created_at',
         'updated_at',
-        'deleted_at'
+        'deleted_at',
+        'pivot'
     ];
 
     /**
