@@ -34,7 +34,6 @@ class FollowerController extends Controller
                 return response()->json(['message' => 'You are already following this user.'], 400);
             }
 
-            // Eager load the 'profile' relationship for both users
             $currentUser->load('profile');
             $user->load('profile');
 
@@ -42,14 +41,12 @@ class FollowerController extends Controller
 
             $currentUser->following()->attach($user->id);
 
-            // Check if 'profile' relationship is loaded for $currentUser
             if ($currentUser->profile) {
                 $currentUser->profile->increment('following_count');
             } else {
                 throw new \Exception('Profile not loaded for current user.');
             }
 
-            // Check if 'profile' relationship is loaded for $user
             if ($user->profile) {
                 $user->profile->increment('follower_count');
             } else {
@@ -85,7 +82,6 @@ class FollowerController extends Controller
                 return response()->json(['message' => 'You are not following this user.'], 400);
             }
 
-            // Eager load the 'profile' relationship for both users
             $currentUser->load('profile');
             $user->load('profile');
 
@@ -93,14 +89,12 @@ class FollowerController extends Controller
 
             $currentUser->following()->detach($user->id);
 
-            // Check if 'profile' relationship is loaded for $currentUser
             if ($currentUser->profile) {
                 $currentUser->profile->decrement('following_count');
             } else {
                 throw new \Exception('Profile not loaded for current user.');
             }
 
-            // Check if 'profile' relationship is loaded for $user
             if ($user->profile) {
                 $user->profile->decrement('follower_count');
             } else {
@@ -123,15 +117,17 @@ class FollowerController extends Controller
         }
     }
 
-    public function following(): \Illuminate\Http\JsonResponse
+    public function following(string $username): \Illuminate\Http\JsonResponse
     {
-        $following = auth()->user()->following()->select(['users.id', 'users.name', 'users.username', 'users.profile_picture'])->get();
+        $user = User::where('username', $username)->firstOrFail();
+        $following = $user->following()->select(['users.id', 'users.name', 'users.username', 'users.profile_picture'])->get();
         return response()->json($following);
     }
 
-    public function followers(): \Illuminate\Http\JsonResponse
+    public function followers(string $username): \Illuminate\Http\JsonResponse
     {
-        $followers = auth()->user()->followers()->select(['users.id', 'users.name', 'users.username', 'users.profile_picture'])->get();
+        $user = User::where('username', $username)->firstOrFail();
+        $followers = $user->followers()->select(['users.id', 'users.name', 'users.username', 'users.profile_picture'])->get();
         return response()->json($followers);
     }
 }
