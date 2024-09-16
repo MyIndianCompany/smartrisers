@@ -89,10 +89,10 @@ Route::controller(\App\Http\Controllers\Post\PostCommentController::class)->grou
 
 /* Followers */
 Route::controller(\App\Http\Controllers\FollowerController::class)->group(function () {
-    Route::get('/users/{username}/following', 'following');
-    Route::get('/users/{username}/followers', 'followers');
     Route::get('search', 'search');
     Route::middleware('auth:api')->group(function () {
+        Route::get('/users/{username}/following', 'following');
+        Route::get('/users/{username}/followers', 'followers');
         Route::post('/follow/{user}', 'follow');
         Route::delete('/unfollow/{user}', 'unfollow');
     });
