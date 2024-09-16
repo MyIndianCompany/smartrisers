@@ -75,16 +75,17 @@ class PostServices
 
     public function uploadPost(Request $request, int $user_id)
     {
-        // Validate the request
         $request->validate([
-            'file' => 'required|file|mimes:mp4,mov,ogg,qt', // Adjust file types and size as needed
+            'file' => 'required|file|mimes:mp4,mov,ogg,qt',
             'caption' => 'required|string|max:255',
         ]);
 
-        // Handle the uploaded file
         $uploadedFile = $request->file('file');
         $originalFileName = $uploadedFile->getClientOriginalName();
-        $uploadedVideo = Cloudinary::uploadVideo($uploadedFile->getRealPath());
+        $uploadedVideo = Cloudinary::uploadVideo($uploadedFile->getRealPath(), [
+            'resource_type' => 'video',
+            'chunk_size'    => 6000000,
+        ]);
         $videoUrl = $uploadedVideo->getSecurePath();
         $publicId = $uploadedVideo->getPublicId();
         $fileSize = $uploadedVideo->getSize();
@@ -92,8 +93,7 @@ class PostServices
         $width = $uploadedVideo->getWidth();
         $height = $uploadedVideo->getHeight();
 
-        // Create the post
-        $post = Post::create([
+        Post::create([
             'user_id'            => $user_id,
             'caption'            => $request->input('caption'),
             'original_file_name' => $originalFileName,
@@ -105,32 +105,16 @@ class PostServices
             'width'              => $width,
             'height'             => $height,
         ]);
-        // Update the post count for the user
+        
         $user = UserProfile::find($user_id);
         if ($user) {
             $user->increment('post_count');
-            // Update the post count for the user's profile
-            $userProfile = $user->profile; // Assuming the relationship is defined as 'profile'
+            $userProfile = $user->profile;
             if ($userProfile) {
                 $userProfile->increment('post_count');
             }
         }
     }
-
-
-    //    public function addComment(Post $post, $comment)
-    //    {
-    //        $user = Auth::user();
-    //        DB::beginTransaction();
-    //        $comment = PostComment::create([
-    //            'post_id' => $post->id,
-    //            'user_id' => $user->id,
-    //            'comment' => $comment
-    //        ]);
-    //        $post->update(['comment_count' => $post->comments()->count()]);
-    //        DB::commit();
-    //        return $comment;
-    //    }
 
     public function addComment(Post $post, $comment)
     {
@@ -178,17 +162,6 @@ class PostServices
             ]);
         }
     }
-
-    //    public function likePost(Post $post)
-    //    {
-    //        $user = Auth::user();
-    //        DB::beginTransaction();
-    //        $like = $user->likes()->where('post_id', $post->id)->first();
-    //        $like ? $like->delete() : $user->likes()->create(['post_id' => $post->id]);
-    //        $post->update(['like_count' => $post->likes()->count()]);
-    //        DB::commit();
-    //        return $like ? 'Post unliked successfully.' : 'Post liked successfully.';
-    //    }
 
     public function likePost(Post $post)
     {

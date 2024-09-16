@@ -27,7 +27,10 @@ class PostCommentController extends Controller
         ]);
         try {
             $this->postServices->addComment($post, $request->input('comment'));
-            return response()->json(['message' => 'Comment added successfully.'], 201);
+            return response()->json([
+                'message' => 'Comment added successfully.',
+                'comment' => $request->input('comment')
+            ], 201);
         } catch (\Exception $exception) {
             report($exception);
             return response()->json([
