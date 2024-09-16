@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Follower;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -120,14 +121,29 @@ class FollowerController extends Controller
     public function following(string $username): \Illuminate\Http\JsonResponse
     {
         $user = User::where('username', $username)->firstOrFail();
+        $authUser = Auth::user();
         $following = $user->following()->select(['users.id', 'users.name', 'users.username', 'users.profile_picture'])->get();
+
+        // Add the following status for each followed user
+        $following = $following->map(function ($followedUser) use ($authUser) {
+            $followedUser->isFollowing = $authUser->following()->where('users.id', $followedUser->id)->exists();
+            return $followedUser;
+        });
+
         return response()->json($following);
     }
 
     public function followers(string $username): \Illuminate\Http\JsonResponse
     {
         $user = User::where('username', $username)->firstOrFail();
+        $authUser = Auth::user();
         $followers = $user->followers()->select(['users.id', 'users.name', 'users.username', 'users.profile_picture'])->get();
+        
+        $followers = $followers->map(function ($follower) use ($authUser) {
+            $follower->isFollowing = $authUser->following()->where('users.id', $follower->id)->exists();
+            return $follower;
+        });
+        
         return response()->json($followers);
     }
 }
