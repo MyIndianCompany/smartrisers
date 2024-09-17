@@ -32,7 +32,11 @@ class FollowerController extends Controller
             }
 
             if ($currentUser->following()->where('following_user_id', $user->id)->exists()) {
-                return response()->json(['message' => 'You are already following this user.'], 400);
+                return response()->json([
+                    'message' => 'You are already following this user.',
+                    'isFollowed' => true,
+                    'action' => 'unfollow'
+                ], 400);
             }
 
             $currentUser->load('profile');
@@ -57,7 +61,9 @@ class FollowerController extends Controller
             DB::commit();
 
             return response()->json([
-                'message' => 'User followed successfully'
+                'message' => 'User followed successfully',
+                'isFollowed' => true,
+                'action' => 'unfollow'
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -65,7 +71,9 @@ class FollowerController extends Controller
             Log::error('Follow error: ' . $e->getMessage() . ' ' . $e->getTraceAsString());
             return response()->json([
                 'message' => 'An error occurred while trying to follow the user.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'isFollowed' => false,
+                'action' => 'follow'
             ], 500);
         }
     }
@@ -80,7 +88,11 @@ class FollowerController extends Controller
             }
 
             if (!$currentUser->following()->where('following_user_id', $user->id)->exists()) {
-                return response()->json(['message' => 'You are not following this user.'], 400);
+                return response()->json([
+                    'message' => 'You are not following this user.',
+                    'isFollowed' => false,
+                    'action' => 'follow'
+                ], 400);
             }
 
             $currentUser->load('profile');
@@ -105,7 +117,9 @@ class FollowerController extends Controller
             DB::commit();
 
             return response()->json([
-                'message' => 'User unfollowed successfully'
+                'message' => 'User unfollowed successfully',
+                'isFollowed' => false,
+                'action' => 'follow'
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -113,7 +127,9 @@ class FollowerController extends Controller
             Log::error('Unfollow error: ' . $e->getMessage() . ' ' . $e->getTraceAsString());
             return response()->json([
                 'message' => 'An error occurred while trying to unfollow the user.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'isFollowed' => true,
+                'action' => 'unfollow'
             ], 500);
         }
     }
