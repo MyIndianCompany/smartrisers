@@ -11,9 +11,12 @@ use App\Models\PostComment;
 use App\Models\User;
 use App\Models\UserProfile;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use FFMpeg\Coordinate\TimeCode;
+use FFMpeg\FFMpeg;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class PostServices
 {
@@ -64,14 +67,13 @@ class PostServices
                 'caption',
                 'original_file_name',
                 'file_url',
+                'thumbnail_url',
                 'public_id',
                 'like_count',
                 'comment_count',
                 'created_at'
             );
     }
-
-
 
     public function uploadPost(Request $request, int $user_id)
     {
@@ -93,26 +95,50 @@ class PostServices
         $width = $uploadedVideo->getWidth();
         $height = $uploadedVideo->getHeight();
 
-        Post::create([
-            'user_id'            => $user_id,
-            'caption'            => $request->input('caption'),
-            'original_file_name' => $originalFileName,
-            'file_url'           => $videoUrl,
-            'public_id'          => $publicId,
-            'file_size'          => $fileSize,
-            'file_type'          => $fileType,
-            'mime_type'          => $uploadedFile->getMimeType(),
-            'width'              => $width,
-            'height'             => $height,
-        ]);
-        
-        $user = UserProfile::find($user_id);
-        if ($user) {
-            $user->increment('post_count');
-            $userProfile = $user->profile;
-            if ($userProfile) {
-                $userProfile->increment('post_count');
+        try {
+            $ffmpeg = FFMpeg::create();
+            $video = $ffmpeg->open($uploadedFile->getRealPath());
+            $frame = $video->frame(TimeCode::fromSeconds(0));
+            $thumbnailPath = storage_path('app/public/thumbnails/' . $publicId . '.jpg');
+            if (!file_exists(dirname($thumbnailPath))) {
+                mkdir(dirname($thumbnailPath), 0755, true);
             }
+            $frame->save($thumbnailPath);
+
+            $uploadedThumbnail = Cloudinary::upload($thumbnailPath, [
+                'public_id' => $publicId . '_thumbnail',
+                'resource_type' => 'image',
+            ]);
+            $thumbnailUrl = $uploadedThumbnail->getSecurePath();
+
+            if (file_exists($thumbnailPath)) {
+                unlink($thumbnailPath);
+            }
+
+            Post::create([
+                'user_id'            => $user_id,
+                'caption'            => $request->input('caption'),
+                'original_file_name' => $originalFileName,
+                'file_url'           => $videoUrl,
+                'thumbnail_url'      => $thumbnailUrl,
+                'public_id'          => $publicId,
+                'file_size'          => $fileSize,
+                'file_type'          => $fileType,
+                'mime_type'          => $uploadedFile->getMimeType(),
+                'width'              => $width,
+                'height'             => $height,
+            ]);
+
+            $user = UserProfile::find($user_id);
+            if ($user) {
+                $user->increment('post_count');
+                $userProfile = $user->profile;
+                if ($userProfile) {
+                    $userProfile->increment('post_count');
+                }
+            }
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Could not generate thumbnail: ' . $e->getMessage()], 500);
         }
     }
 

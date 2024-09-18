@@ -25,6 +25,7 @@ class Post extends Model
         'caption',
         'original_file_name',
         'file_url',
+        'thumbnail_url',
         'public_id',
         'file_size',
         'file_type',
