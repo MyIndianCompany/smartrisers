@@ -67,7 +67,7 @@ class PostServices
                 'caption',
                 'original_file_name',
                 'file_url',
-                'thumbnail_url',
+                // 'thumbnail_url',
                 'public_id',
                 'like_count',
                 'comment_count',
@@ -96,31 +96,31 @@ class PostServices
         $height = $uploadedVideo->getHeight();
 
         try {
-            $ffmpeg = FFMpeg::create();
-            $video = $ffmpeg->open($uploadedFile->getRealPath());
-            $frame = $video->frame(TimeCode::fromSeconds(0));
-            $thumbnailPath = storage_path('app/public/thumbnails/' . $publicId . '.jpg');
-            if (!file_exists(dirname($thumbnailPath))) {
-                mkdir(dirname($thumbnailPath), 0755, true);
-            }
-            $frame->save($thumbnailPath);
+            // $ffmpeg = FFMpeg::create();
+            // $video = $ffmpeg->open($uploadedFile->getRealPath());
+            // $frame = $video->frame(TimeCode::fromSeconds(0));
+            // $thumbnailPath = storage_path('app/public/thumbnails/' . $publicId . '.jpg');
+            // if (!file_exists(dirname($thumbnailPath))) {
+            //     mkdir(dirname($thumbnailPath), 0755, true);
+            // }
+            // $frame->save($thumbnailPath);
 
-            $uploadedThumbnail = Cloudinary::upload($thumbnailPath, [
-                'public_id' => $publicId . '_thumbnail',
-                'resource_type' => 'image',
-            ]);
-            $thumbnailUrl = $uploadedThumbnail->getSecurePath();
+            // $uploadedThumbnail = Cloudinary::upload($thumbnailPath, [
+            //     'public_id' => $publicId . '_thumbnail',
+            //     'resource_type' => 'image',
+            // ]);
+            // $thumbnailUrl = $uploadedThumbnail->getSecurePath();
 
-            if (file_exists($thumbnailPath)) {
-                unlink($thumbnailPath);
-            }
+            // if (file_exists($thumbnailPath)) {
+            //     unlink($thumbnailPath);
+            // }
 
             Post::create([
                 'user_id'            => $user_id,
                 'caption'            => $request->input('caption'),
                 'original_file_name' => $originalFileName,
                 'file_url'           => $videoUrl,
-                'thumbnail_url'      => $thumbnailUrl,
+                // 'thumbnail_url'      => $thumbnailUrl,
                 'public_id'          => $publicId,
                 'file_size'          => $fileSize,
                 'file_type'          => $fileType,
