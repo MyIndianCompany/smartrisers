@@ -120,7 +120,7 @@ class PostServices
                 'caption'            => $request->input('caption'),
                 'original_file_name' => $originalFileName,
                 'file_url'           => $videoUrl,
-                // 'thumbnail_url'      => $thumbnailUrl,
+                'thumbnail_url'      => $thumbnailUrl,
                 'public_id'          => $publicId,
                 'file_size'          => $fileSize,
                 'file_type'          => $fileType,
