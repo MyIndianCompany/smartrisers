@@ -67,7 +67,6 @@ class PostServices
                 'caption',
                 'original_file_name',
                 'file_url',
-                // 'thumbnail_url',
                 'public_id',
                 'like_count',
                 'comment_count',
