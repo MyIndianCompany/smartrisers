@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class PostServices
 {
@@ -78,11 +79,14 @@ class PostServices
     public function uploadPost(Request $request, int $user_id)
     {
         $request->validate([
-            'file' => 'required|file|mimes:mp4,mov,ogg,qt',
+            'file' => 'required|file|mimes:mp4,mov,ogg,qt|max:51200',
             'caption' => 'required|string|max:255',
         ]);
 
         $uploadedFile = $request->file('file');
+        if (!$uploadedFile) {
+            return response()->json(['error' => 'File upload failed.'], 400);
+        }
         $originalFileName = $uploadedFile->getClientOriginalName();
         $uploadedVideo = Cloudinary::uploadVideo($uploadedFile->getRealPath(), [
             'resource_type' => 'video',
@@ -100,9 +104,10 @@ class PostServices
             $video = $ffmpeg->open($uploadedFile->getRealPath());
             $frame = $video->frame(TimeCode::fromSeconds(0));
             $thumbnailPath = storage_path('app/public/thumbnails/' . $publicId . '.jpg');
-            if (!file_exists(dirname($thumbnailPath))) {
-                mkdir(dirname($thumbnailPath), 0755, true);
-            }
+            // if (!file_exists(dirname($thumbnailPath))) {
+            //     mkdir(dirname($thumbnailPath), 0755, true);
+            // }
+            Storage::makeDirectory('public/thumbnails');
             $frame->save($thumbnailPath);
 
             $uploadedThumbnail = Cloudinary::upload($thumbnailPath, [
