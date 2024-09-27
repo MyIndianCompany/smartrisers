@@ -78,73 +78,74 @@ class PostServices
 
     public function uploadPost(Request $request, int $user_id)
     {
-        $request->validate([
-            'file' => 'required|file|mimes:mp4,mov,ogg,qt|max:51200',
-            'caption' => 'required|string|max:255',
-        ]);
+        return "Hello";
+        // $request->validate([
+        //     'file' => 'required|file|mimes:mp4,mov,ogg,qt|max:51200',
+        //     'caption' => 'required|string|max:255',
+        // ]);
 
-        $uploadedFile = $request->file('file');
-        if (!$uploadedFile) {
-            return response()->json(['error' => 'File upload failed.'], 400);
-        }
-        $originalFileName = $uploadedFile->getClientOriginalName();
-        $uploadedVideo = Cloudinary::uploadVideo($uploadedFile->getRealPath(), [
-            'resource_type' => 'video',
-            'chunk_size'    => 6000000,
-        ]);
-        $videoUrl = $uploadedVideo->getSecurePath();
-        $publicId = $uploadedVideo->getPublicId();
-        $fileSize = $uploadedVideo->getSize();
-        $fileType = $uploadedVideo->getFileType();
-        $width = $uploadedVideo->getWidth();
-        $height = $uploadedVideo->getHeight();
+        // $uploadedFile = $request->file('file');
+        // if (!$uploadedFile) {
+        //     return response()->json(['error' => 'File upload failed.'], 400);
+        // }
+        // $originalFileName = $uploadedFile->getClientOriginalName();
+        // $uploadedVideo = Cloudinary::uploadVideo($uploadedFile->getRealPath(), [
+        //     'resource_type' => 'video',
+        //     'chunk_size'    => 6000000,
+        // ]);
+        // $videoUrl = $uploadedVideo->getSecurePath();
+        // $publicId = $uploadedVideo->getPublicId();
+        // $fileSize = $uploadedVideo->getSize();
+        // $fileType = $uploadedVideo->getFileType();
+        // $width = $uploadedVideo->getWidth();
+        // $height = $uploadedVideo->getHeight();
 
-        try {
-            $ffmpeg = FFMpeg::create();
-            $video = $ffmpeg->open($uploadedFile->getRealPath());
-            $frame = $video->frame(TimeCode::fromSeconds(0));
-            $thumbnailPath = storage_path('app/public/thumbnails/' . $publicId . '.jpg');
-            // if (!file_exists(dirname($thumbnailPath))) {
-            //     mkdir(dirname($thumbnailPath), 0755, true);
-            // }
-            Storage::makeDirectory('public/thumbnails');
-            $frame->save($thumbnailPath);
+        // try {
+        //     $ffmpeg = FFMpeg::create();
+        //     $video = $ffmpeg->open($uploadedFile->getRealPath());
+        //     $frame = $video->frame(TimeCode::fromSeconds(0));
+        //     $thumbnailPath = storage_path('app/public/thumbnails/' . $publicId . '.jpg');
+        //     // if (!file_exists(dirname($thumbnailPath))) {
+        //     //     mkdir(dirname($thumbnailPath), 0755, true);
+        //     // }
+        //     Storage::makeDirectory('public/thumbnails');
+        //     $frame->save($thumbnailPath);
 
-            $uploadedThumbnail = Cloudinary::upload($thumbnailPath, [
-                'public_id' => $publicId . '_thumbnail',
-                'resource_type' => 'image',
-            ]);
-            $thumbnailUrl = $uploadedThumbnail->getSecurePath();
+        //     $uploadedThumbnail = Cloudinary::upload($thumbnailPath, [
+        //         'public_id' => $publicId . '_thumbnail',
+        //         'resource_type' => 'image',
+        //     ]);
+        //     $thumbnailUrl = $uploadedThumbnail->getSecurePath();
 
-            if (file_exists($thumbnailPath)) {
-                unlink($thumbnailPath);
-            }
+        //     if (file_exists($thumbnailPath)) {
+        //         unlink($thumbnailPath);
+        //     }
 
-            Post::create([
-                'user_id'            => $user_id,
-                'caption'            => $request->input('caption'),
-                'original_file_name' => $originalFileName,
-                'file_url'           => $videoUrl,
-                'thumbnail_url'      => $thumbnailUrl,
-                'public_id'          => $publicId,
-                'file_size'          => $fileSize,
-                'file_type'          => $fileType,
-                'mime_type'          => $uploadedFile->getMimeType(),
-                'width'              => $width,
-                'height'             => $height,
-            ]);
+        //     Post::create([
+        //         'user_id'            => $user_id,
+        //         'caption'            => $request->input('caption'),
+        //         'original_file_name' => $originalFileName,
+        //         'file_url'           => $videoUrl,
+        //         'thumbnail_url'      => $thumbnailUrl,
+        //         'public_id'          => $publicId,
+        //         'file_size'          => $fileSize,
+        //         'file_type'          => $fileType,
+        //         'mime_type'          => $uploadedFile->getMimeType(),
+        //         'width'              => $width,
+        //         'height'             => $height,
+        //     ]);
 
-            $user = UserProfile::find($user_id);
-            if ($user) {
-                $user->increment('post_count');
-                $userProfile = $user->profile;
-                if ($userProfile) {
-                    $userProfile->increment('post_count');
-                }
-            }
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Could not generate thumbnail: ' . $e->getMessage()], 500);
-        }
+        //     $user = UserProfile::find($user_id);
+        //     if ($user) {
+        //         $user->increment('post_count');
+        //         $userProfile = $user->profile;
+        //         if ($userProfile) {
+        //             $userProfile->increment('post_count');
+        //         }
+        //     }
+        // } catch (\Exception $e) {
+        //     return response()->json(['error' => 'Could not generate thumbnail: ' . $e->getMessage()], 500);
+        // }
     }
 
     public function addComment(Post $post, $comment)
