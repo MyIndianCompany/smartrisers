@@ -17,7 +17,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 class PostServices
 {
@@ -68,7 +67,6 @@ class PostServices
                 'caption',
                 'original_file_name',
                 'file_url',
-                'thumbnail_url',
                 'public_id',
                 'like_count',
                 'comment_count',
@@ -79,14 +77,11 @@ class PostServices
     public function uploadPost(Request $request, int $user_id)
     {
         $request->validate([
-            'file' => 'required|file|mimes:mp4,mov,ogg,qt|max:51200',
+            'file' => 'required|file|mimes:mp4,mov,ogg,qt',
             'caption' => 'required|string|max:255',
         ]);
 
         $uploadedFile = $request->file('file');
-        if (!$uploadedFile) {
-            return response()->json(['error' => 'File upload failed.'], 400);
-        }
         $originalFileName = $uploadedFile->getClientOriginalName();
         $uploadedVideo = Cloudinary::uploadVideo($uploadedFile->getRealPath(), [
             'resource_type' => 'video',
@@ -100,32 +95,31 @@ class PostServices
         $height = $uploadedVideo->getHeight();
 
         try {
-            $ffmpeg = FFMpeg::create();
-            $video = $ffmpeg->open($uploadedFile->getRealPath());
-            $frame = $video->frame(TimeCode::fromSeconds(0));
-            $thumbnailPath = storage_path('app/public/thumbnails/' . $publicId . '.jpg');
+            // $ffmpeg = FFMpeg::create();
+            // $video = $ffmpeg->open($uploadedFile->getRealPath());
+            // $frame = $video->frame(TimeCode::fromSeconds(0));
+            // $thumbnailPath = storage_path('app/public/thumbnails/' . $publicId . '.jpg');
             // if (!file_exists(dirname($thumbnailPath))) {
             //     mkdir(dirname($thumbnailPath), 0755, true);
             // }
-            Storage::makeDirectory('public/thumbnails');
-            $frame->save($thumbnailPath);
+            // $frame->save($thumbnailPath);
 
-            $uploadedThumbnail = Cloudinary::upload($thumbnailPath, [
-                'public_id' => $publicId . '_thumbnail',
-                'resource_type' => 'image',
-            ]);
-            $thumbnailUrl = $uploadedThumbnail->getSecurePath();
+            // $uploadedThumbnail = Cloudinary::upload($thumbnailPath, [
+            //     'public_id' => $publicId . '_thumbnail',
+            //     'resource_type' => 'image',
+            // ]);
+            // $thumbnailUrl = $uploadedThumbnail->getSecurePath();
 
-            if (file_exists($thumbnailPath)) {
-                unlink($thumbnailPath);
-            }
+            // if (file_exists($thumbnailPath)) {
+            //     unlink($thumbnailPath);
+            // }
 
             Post::create([
                 'user_id'            => $user_id,
                 'caption'            => $request->input('caption'),
                 'original_file_name' => $originalFileName,
                 'file_url'           => $videoUrl,
-                'thumbnail_url'      => $thumbnailUrl,
+                // 'thumbnail_url'      => $thumbnailUrl,
                 'public_id'          => $publicId,
                 'file_size'          => $fileSize,
                 'file_type'          => $fileType,

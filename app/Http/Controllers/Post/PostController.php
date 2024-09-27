@@ -94,7 +94,7 @@ class PostController extends Controller
 
     public function store(Request $request, PostServices $postService): \Illuminate\Http\JsonResponse
     {
-        // $request->validate(['file' => 'required|mimes:mp4,mov,avi']);
+        $request->validate(['file' => 'required|mimes:mp4,mov,avi']);
         try {
             DB::beginTransaction();
             $user_id = auth()->id();
