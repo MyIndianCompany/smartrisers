@@ -7,11 +7,15 @@ use App\Models\Follower;
 use App\Models\Post;
 use App\Models\User;
 use App\Models\UserBlock;
+use App\Models\UserProfile;
 use App\Services\Posts\PostServices;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use FFMpeg\Coordinate\TimeCode;
+use FFMpeg\FFMpeg;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class PostController extends Controller
 {
@@ -92,13 +96,83 @@ class PostController extends Controller
         return response()->json($posts, 201);
     }
 
-    public function store(Request $request, PostServices $postService): \Illuminate\Http\JsonResponse
+    public function store(Request $request): \Illuminate\Http\JsonResponse
     {
-        // $request->validate(['file' => 'required|mimes:mp4,mov,avi']);
+        $request->validate([
+            'file' => 'required|file|mimes:mp4,mov,avi',
+            'caption' => 'string|max:255'
+        ]);
         try {
             DB::beginTransaction();
+            // Retrieve the authenticated user's ID
             $user_id = auth()->id();
-            $postService->uploadPost($request, $user_id);
+
+            // Retrieve the uploaded file
+            $uploadedFile = $request->file('file');
+            $originalFileName = $uploadedFile->getClientOriginalName();
+            $extension = $uploadedFile->getClientOriginalExtension();
+
+            // Fetch the username and create folder path structure
+            $user = User::find($user_id);
+            $username = $user->username; // Assuming the user has a 'username' field
+
+            // Create post object to get the post_id
+            $post = Post::create([
+                'user_id' => $user_id,
+                'caption' => $request->input('caption'),
+                'original_file_name' => $originalFileName,
+                // File and thumbnail URLs will be updated later
+            ]);
+
+            $postId = $post->id;
+
+            // Define paths for video and thumbnail
+            $videoPath = "public/{$username}/post/{$postId}/video/{$originalFileName}";
+            $thumbnailPath = "public/{$username}/post/{$postId}/thumbnail/" . pathinfo($originalFileName, PATHINFO_FILENAME) . ".jpg";
+
+            // Store the uploaded video in the defined path
+            Storage::put($videoPath, file_get_contents($uploadedFile->getRealPath()));
+
+            // Generate thumbnail using FFMpeg
+            try {
+                $ffmpeg = FFMpeg::create();
+                $video = $ffmpeg->open($uploadedFile->getRealPath());
+                $frame = $video->frame(TimeCode::fromSeconds(0));
+
+                // Ensure the thumbnail directory exists
+                if (!Storage::exists(dirname($thumbnailPath))) {
+                    Storage::makeDirectory(dirname($thumbnailPath), 0755, true);
+                }
+
+                // Save the thumbnail
+                $thumbnailFullPath = storage_path("app/{$thumbnailPath}");
+                $frame->save($thumbnailFullPath);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return response()->json(['error' => 'Could not generate thumbnail: ' . $e->getMessage()], 500);
+            }
+
+            // Store file URL and thumbnail URL
+            $videoUrl = Storage::url($videoPath);
+            $thumbnailUrl = Storage::url($thumbnailPath);
+
+            // Update the post record with the correct paths
+            $post->update([
+                'file_url' => $videoUrl,
+                'thumbnail_url' => $thumbnailUrl,
+                'file_size' => $uploadedFile->getSize(),
+                'file_type' => $extension,
+                'mime_type' => $uploadedFile->getMimeType(),
+                'width' => $video->getStreams()->videos()->first()->get('width'),
+                'height' => $video->getStreams()->videos()->first()->get('height'),
+            ]);
+
+            // Increment the user's post count
+            $userProfile = UserProfile::find($user_id);
+            if ($userProfile) {
+                $userProfile->increment('post_count');
+            }
+
             DB::commit();
             return response()->json(['success' => 'Your post has been successfully uploaded!'], 201);
         } catch (\Exception $exception) {
@@ -145,5 +219,4 @@ class PostController extends Controller
             ], 401);
         }
     }
-
 }

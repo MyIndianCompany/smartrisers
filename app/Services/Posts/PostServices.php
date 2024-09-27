@@ -2,6 +2,7 @@
 
 namespace App\Services\Posts;
 
+use App\Events\CommentLikeNotification;
 use App\Events\CommentNotification;
 use App\Events\CommentReplyNotification;
 use App\Events\LikeNotification;
@@ -9,12 +10,13 @@ use App\Models\Post;
 use App\Models\PostComment;
 use App\Models\User;
 use App\Models\UserProfile;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use FFMpeg\Coordinate\TimeCode;
 use FFMpeg\FFMpeg;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class PostServices
 {
@@ -65,6 +67,7 @@ class PostServices
                 'caption',
                 'original_file_name',
                 'file_url',
+                'thumbnail_url',
                 'public_id',
                 'like_count',
                 'comment_count',
@@ -74,80 +77,70 @@ class PostServices
 
     public function uploadPost(Request $request, int $user_id)
     {
-        // Validate the input fields
         $request->validate([
             'file' => 'required|file|mimes:mp4,mov,ogg,qt',
             'caption' => 'required|string|max:255',
         ]);
 
-        // Retrieve the uploaded file
         $uploadedFile = $request->file('file');
         $originalFileName = $uploadedFile->getClientOriginalName();
-        $extension = $uploadedFile->getClientOriginalExtension();
-
-        // Fetch the username and create folder path structure
-        $user = User::find($user_id);
-        $username = $user->username; // Assuming the user has a 'username' field
-
-        // Create post object to get the post_id
-        $post = Post::create([
-            'user_id' => $user_id,
-            'caption' => $request->input('caption'),
-            'original_file_name' => $originalFileName,
-            // File and thumbnail URLs will be updated later
+        $uploadedVideo = Cloudinary::uploadVideo($uploadedFile->getRealPath(), [
+            'resource_type' => 'video',
+            'chunk_size'    => 6000000,
         ]);
+        $videoUrl = $uploadedVideo->getSecurePath();
+        $publicId = $uploadedVideo->getPublicId();
+        $fileSize = $uploadedVideo->getSize();
+        $fileType = $uploadedVideo->getFileType();
+        $width = $uploadedVideo->getWidth();
+        $height = $uploadedVideo->getHeight();
 
-        $postId = $post->id;
-
-        // Define paths for video and thumbnail
-        $videoPath = "public/{$username}/post/{$postId}/video/{$originalFileName}";
-        $thumbnailPath = "public/{$username}/post/{$postId}/thumbnail/" . pathinfo($originalFileName, PATHINFO_FILENAME) . ".jpg";
-
-        // Store the uploaded video in the defined path
-        Storage::put($videoPath, file_get_contents($uploadedFile->getRealPath()));
-
-        // Generate thumbnail using FFMpeg
         try {
-            $ffmpeg = FFMpeg::create();
-            $video = $ffmpeg->open($uploadedFile->getRealPath());
-            $frame = $video->frame(TimeCode::fromSeconds(0));
+            // $ffmpeg = FFMpeg::create();
+            // $video = $ffmpeg->open($uploadedFile->getRealPath());
+            // $frame = $video->frame(TimeCode::fromSeconds(0));
+            // $thumbnailPath = storage_path('app/public/thumbnails/' . $publicId . '.jpg');
+            // if (!file_exists(dirname($thumbnailPath))) {
+            //     mkdir(dirname($thumbnailPath), 0755, true);
+            // }
+            // $frame->save($thumbnailPath);
 
-            // Ensure the thumbnail directory exists
-            if (!Storage::exists(dirname($thumbnailPath))) {
-                Storage::makeDirectory(dirname($thumbnailPath), 0755, true);
+            // $uploadedThumbnail = Cloudinary::upload($thumbnailPath, [
+            //     'public_id' => $publicId . '_thumbnail',
+            //     'resource_type' => 'image',
+            // ]);
+            // $thumbnailUrl = $uploadedThumbnail->getSecurePath();
+
+            // if (file_exists($thumbnailPath)) {
+            //     unlink($thumbnailPath);
+            // }
+
+            Post::create([
+                'user_id'            => $user_id,
+                'caption'            => $request->input('caption'),
+                'original_file_name' => $originalFileName,
+                'file_url'           => $videoUrl,
+                // 'thumbnail_url'      => $thumbnailUrl,
+                'public_id'          => $publicId,
+                'file_size'          => $fileSize,
+                'file_type'          => $fileType,
+                'mime_type'          => $uploadedFile->getMimeType(),
+                'width'              => $width,
+                'height'             => $height,
+            ]);
+
+            $user = UserProfile::find($user_id);
+            if ($user) {
+                $user->increment('post_count');
+                $userProfile = $user->profile;
+                if ($userProfile) {
+                    $userProfile->increment('post_count');
+                }
             }
-
-            // Save the thumbnail
-            $thumbnailFullPath = storage_path("app/{$thumbnailPath}");
-            $frame->save($thumbnailFullPath);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Could not generate thumbnail: ' . $e->getMessage()], 500);
         }
-
-        // Store file URL and thumbnail URL
-        $videoUrl = Storage::url($videoPath);
-        $thumbnailUrl = Storage::url($thumbnailPath);
-
-        // Update the post record with the correct paths
-        $post->update([
-            'file_url' => $videoUrl,
-            'thumbnail_url' => $thumbnailUrl,
-            'file_size' => $uploadedFile->getSize(),
-            'file_type' => $extension,
-            'mime_type' => $uploadedFile->getMimeType(),
-            'width' => $video->getStreams()->videos()->first()->get('width'),
-            'height' => $video->getStreams()->videos()->first()->get('height'),
-        ]);
-
-        // Increment the user's post count
-        $userProfile = UserProfile::find($user_id);
-        if ($userProfile) {
-            $userProfile->increment('post_count');
-        }
-
-        return response()->json(['success' => 'Your post has been successfully uploaded!'], 201);
     }
-
 
     public function addComment(Post $post, $comment)
     {
