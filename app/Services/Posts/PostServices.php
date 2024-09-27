@@ -76,7 +76,7 @@ class PostServices
             );
     }
 
-    public function uploadPost(Request $request, int $user_id)
+    public function uploadPost()
     {
         return "Hello";
         // $request->validate([
