@@ -15,14 +15,14 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('user_id');
             $table->longText('caption')->nullable();
-            $table->string('original_file_name');
-            $table->string('file_url');
-            $table->string('public_id');
-            $table->string('file_size');
-            $table->string('file_type');
-            $table->string('mime_type');
-            $table->string('width');
-            $table->string('height');
+            $table->string('original_file_name')->nullable();
+            $table->string('file_url')->nullable();
+            $table->string('public_id')->nullable();
+            $table->string('file_size')->nullable();
+            $table->string('file_type')->nullable();
+            $table->string('mime_type')->nullable();
+            $table->string('width')->nullable();
+            $table->string('height')->nullable();
             $table->integer('like_count')->default(0);
             $table->integer('comment_count')->default(0);
 
