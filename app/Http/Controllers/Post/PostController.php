@@ -154,7 +154,7 @@ class PostController extends Controller
             // }
 
             // Store file URL and thumbnail URL
-            $videoUrl = Storage::url($videoPath);
+            $videoUrl = config('app.url') . Storage::url($videoPath);
             // $thumbnailUrl = Storage::url($thumbnailPath);
 
             // Update the post record with the correct paths
