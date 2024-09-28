@@ -21,8 +21,6 @@ return new class extends Migration
             $table->string('file_size')->nullable();
             $table->string('file_type')->nullable();
             $table->string('mime_type')->nullable();
-            $table->string('width')->nullable();
-            $table->string('height')->nullable();
             $table->integer('like_count')->default(0);
             $table->integer('comment_count')->default(0);
 

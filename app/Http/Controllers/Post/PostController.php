@@ -97,105 +97,98 @@ class PostController extends Controller
     }
 
     public function store(Request $request): \Illuminate\Http\JsonResponse
-{
-    // Validate input fields
-    $request->validate([
-        'file' => 'required|file|mimes:mp4,mov,ogg,qt', // Adjust max size if needed
-        'caption' => 'string|max:255',
-    ]);
-
-    // Start transaction
-    try {
-        DB::beginTransaction();
-
-        // Retrieve the authenticated user's ID
-        $user_id = auth()->id();
-
-        // Retrieve the uploaded file
-        $uploadedFile = $request->file('file');
-        $originalFileName = $uploadedFile->getClientOriginalName();
-        $extension = $uploadedFile->getClientOriginalExtension();
-
-        // Fetch the username and create folder path structure
-        $user = User::find($user_id);
-        $username = $user->username; // Assuming the user has a 'username' field
-
-        // Create post object with empty file_url and thumbnail_url
-        $post = Post::create([
-            'user_id' => $user_id,
-            'caption' => $request->input('caption'),
-            'original_file_name' => $originalFileName,
-            'file_url' => null, // Temporarily set to null or empty string
-            'thumbnail_url' => null, // Temporarily set to null or empty string
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:mp4,mov,ogg,qt',
+            'caption' => 'string|max:255',
         ]);
 
-        $postId = $post->id;
-
-        // Define paths for video and thumbnail
-        $videoPath = "public/{$username}/post/{$postId}/video/{$originalFileName}";
-        $thumbnailPath = "public/{$username}/post/{$postId}/thumbnail/" . pathinfo($originalFileName, PATHINFO_FILENAME) . ".jpg";
-
-        // Store the uploaded video in the defined path
-        Storage::put($videoPath, file_get_contents($uploadedFile->getRealPath()));
-
-        // Generate thumbnail using FFMpeg
         try {
-            $ffmpeg = FFMpeg::create();
-            $video = $ffmpeg->open($uploadedFile->getRealPath());
-            $frame = $video->frame(TimeCode::fromSeconds(0));
+            DB::beginTransaction();
 
-            // Ensure the thumbnail directory exists
-            if (!Storage::exists(dirname($thumbnailPath))) {
-                Storage::makeDirectory(dirname($thumbnailPath), 0755, true);
+            $user_id = auth()->id();
+
+            $uploadedFile = $request->file('file');
+            $originalFileName = $uploadedFile->getClientOriginalName();
+            $extension = $uploadedFile->getClientOriginalExtension();
+
+            // Fetch the username and create folder path structure
+            $user = User::find($user_id);
+            $username = $user->username;
+
+            // Create post object with empty file_url and thumbnail_url
+            $post = Post::create([
+                'user_id' => $user_id,
+                'caption' => $request->input('caption'),
+                'original_file_name' => $originalFileName,
+                'file_url' => null, // Temporarily set to null or empty string
+                'thumbnail_url' => null, // Temporarily set to null or empty string
+            ]);
+
+            $postId = $post->id;
+
+            // Define paths for video and thumbnail
+            $videoPath = "public/{$username}/post/{$postId}/video/{$originalFileName}";
+            // $thumbnailPath = "public/{$username}/post/{$postId}/thumbnail/" . pathinfo($originalFileName, PATHINFO_FILENAME) . ".jpg";
+
+            // Store the uploaded video in the defined path
+            Storage::put($videoPath, file_get_contents($uploadedFile->getRealPath()));
+
+            // Generate thumbnail using FFMpeg
+            // try {
+            //     $ffmpeg = FFMpeg::create();
+            //     $video = $ffmpeg->open($uploadedFile->getRealPath());
+            //     $frame = $video->frame(TimeCode::fromSeconds(0));
+
+            //     // Ensure the thumbnail directory exists
+            //     if (!Storage::exists(dirname($thumbnailPath))) {
+            //         Storage::makeDirectory(dirname($thumbnailPath), 0755, true);
+            //     }
+
+            //     // Save the thumbnail
+            //     $thumbnailFullPath = storage_path("app/{$thumbnailPath}");
+            //     $frame->save($thumbnailFullPath);
+            // } catch (\Exception $e) {
+            //     DB::rollBack();
+            //     return response()->json(['error' => 'Could not generate thumbnail: ' . $e->getMessage()], 500);
+            // }
+
+            // Store file URL and thumbnail URL
+            $videoUrl = Storage::url($videoPath);
+            // $thumbnailUrl = Storage::url($thumbnailPath);
+
+            // Update the post record with the correct paths
+            $post->update([
+                'file_url' => $videoUrl,
+                'thumbnail_url' => null,
+                'file_size' => $uploadedFile->getSize(),
+                'file_type' => $extension,
+                'mime_type' => $uploadedFile->getMimeType(),
+            ]);
+
+            // Increment the user's post count
+            $userProfile = UserProfile::find($user_id);
+            if ($userProfile) {
+                $userProfile->increment('post_count');
             }
 
-            // Save the thumbnail
-            $thumbnailFullPath = storage_path("app/{$thumbnailPath}");
-            $frame->save($thumbnailFullPath);
-        } catch (\Exception $e) {
+            // Commit the transaction
+            DB::commit();
+
+            // Return success response
+            return response()->json(['success' => 'Your post has been successfully uploaded!'], 201);
+        } catch (\Exception $exception) {
+            // Rollback in case of an error
             DB::rollBack();
-            return response()->json(['error' => 'Could not generate thumbnail: ' . $e->getMessage()], 500);
+            report($exception);
+
+            // Return error response
+            return response()->json([
+                'message' => 'Failed to process the transaction. Please try again later.',
+                'error' => $exception->getMessage()
+            ], 422);
         }
-
-        // Store file URL and thumbnail URL
-        $videoUrl = Storage::url($videoPath);
-        $thumbnailUrl = Storage::url($thumbnailPath);
-
-        // Update the post record with the correct paths
-        $post->update([
-            'file_url' => $videoUrl,
-            'thumbnail_url' => $thumbnailUrl,
-            'file_size' => $uploadedFile->getSize(),
-            'file_type' => $extension,
-            'mime_type' => $uploadedFile->getMimeType(),
-            'width' => $video->getStreams()->videos()->first()->get('width'),
-            'height' => $video->getStreams()->videos()->first()->get('height'),
-        ]);
-
-        // Increment the user's post count
-        $userProfile = UserProfile::find($user_id);
-        if ($userProfile) {
-            $userProfile->increment('post_count');
-        }
-
-        // Commit the transaction
-        DB::commit();
-
-        // Return success response
-        return response()->json(['success' => 'Your post has been successfully uploaded!'], 201);
-
-    } catch (\Exception $exception) {
-        // Rollback in case of an error
-        DB::rollBack();
-        report($exception);
-
-        // Return error response
-        return response()->json([
-            'message' => 'Failed to process the transaction. Please try again later.',
-            'error' => $exception->getMessage()
-        ], 422);
     }
-}
 
     public function destroy(Post $post): \Illuminate\Http\JsonResponse
     {
