@@ -149,7 +149,7 @@ class PostController extends Controller
     {
         try {
             $user = auth()->user();
-            if ($post->user_id !== $user->id && $user->status !== 'admin') {
+            if ($post->user_id !== $user->id && $user->role !== 'admin') {
                 return response()->json(['message' => 'You are not authorized to delete this post.'], 403);
             }
 
