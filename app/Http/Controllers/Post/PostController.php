@@ -148,7 +148,8 @@ class PostController extends Controller
     public function destroy(Post $post): \Illuminate\Http\JsonResponse
     {
         try {
-            if ($post->user_id !== auth()->user()->id) {
+            $user = auth()->user();
+            if ($post->user_id !== $user->id && $user->status !== 'admin') {
                 return response()->json(['message' => 'You are not authorized to delete this post.'], 403);
             }
 
