@@ -151,9 +151,17 @@ class PostController extends Controller
             if ($post->user_id !== auth()->user()->id) {
                 return response()->json(['message' => 'You are not authorized to delete this post.'], 403);
             }
-            Cloudinary::destroy($post->public_id);
+
+            $videoPath = str_replace(config('app.url') . '/storage', 'public', $post->file_url);
+            if (Storage::exists($videoPath)) {
+                Storage::delete($videoPath);
+            }
             $post->delete();
-            return response()->json(['success' => 'Post deleted successfully.'], 201);
+            $userProfile = UserProfile::find($post->user_id);
+            if ($userProfile && $userProfile->post_count > 0) {
+                $userProfile->decrement('post_count');
+            }
+            return response()->json(['success' => 'Post deleted successfully.'], 200);
         } catch (\Exception $exception) {
             report($exception);
             return response()->json([
