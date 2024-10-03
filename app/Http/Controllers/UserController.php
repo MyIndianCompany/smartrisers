@@ -1,17 +1,17 @@
 <?php
+
 namespace App\Http\Controllers;
 
-use App\Common\Constants\Constants;
 use App\Http\Requests\UserRequest;
 use App\Models\Post;
 use App\Models\User;
 use App\Models\UserProfile;
 use App\Models\UserWebsiteUrl;
 use Carbon\Carbon;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary as CloudinaryLabs;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
@@ -24,27 +24,20 @@ class UserController extends Controller
             if ($request->has('profile_picture')) {
                 $file = $request->file('profile_picture');
                 if ($file) {
-                    $filePath = $file->getRealPath();
-                    // Delete the old profile picture from Cloudinary
-                    if ($profilePicture) {
-                        try {
-                            $publicId = pathinfo(parse_url($profilePicture, PHP_URL_PATH), PATHINFO_FILENAME);
-                            CloudinaryLabs::destroy($publicId);
-                        } catch (\Exception $e) {
-                            return response()->json(['message' => 'Error deleting old profile picture', 'error' => $e->getMessage()]);
-                        }
+                    $username = $user->username;
+                    $originalFileName = $file->getClientOriginalName();
+                    $directoryPath = "public/{$username}/profile_picture";
+                    if (!Storage::exists($directoryPath)) {
+                        Storage::makeDirectory($directoryPath);
                     }
-                    try {
-                        $uploadResult = CloudinaryLabs::upload($filePath)->getSecurePath();
-                        $profilePicture = $uploadResult;
-                    } catch (\Exception $e) {
-                        return response()->json(['message' => 'Cloudinary upload error', 'error' => $e->getMessage()]);
+                    if ($profilePicture && Storage::exists($profilePicture)) {
+                        Storage::delete($profilePicture);
                     }
+                    $storedPath = $file->storeAs($directoryPath, $originalFileName);
+                    $profilePicture = url(Storage::url($storedPath));
                 } else {
                     return response()->json(['message' => 'No file found in the request.']);
                 }
-            } else {
-                return response()->json(['Request does not contain a profile picture.']);
             }
             $user->update([
                 'name' => $request->input('name', $user->name),
@@ -86,10 +79,6 @@ class UserController extends Controller
             ], 500);
         }
     }
-
-
-
-
 
     public function userProfile($username)
     {
@@ -399,7 +388,7 @@ class UserController extends Controller
 
     public function getAllUserHasPosts()
     {
-        return User::where('status','active')
+        return User::where('status', 'active')
             ->has('posts')
             ->select('id', 'name', 'username', 'email', 'profile_picture')
             ->with('posts', function ($query) {
@@ -422,4 +411,3 @@ class UserController extends Controller
         ], 201);
     }
 }
-
