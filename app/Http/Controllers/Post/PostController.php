@@ -186,6 +186,10 @@ class PostController extends Controller
             if (Storage::exists($videoPath)) {
                 Storage::delete($videoPath);
             }
+            $thumbnailPath = str_replace(config('app.url') . '/storage', 'public', $post->thumbnail_url);
+            if (Storage::exists($thumbnailPath)) {
+                Storage::delete($thumbnailPath);
+            }
             $post->delete();
             $userProfile = UserProfile::find($post->user_id);
             if ($userProfile && $userProfile->post_count > 0) {
