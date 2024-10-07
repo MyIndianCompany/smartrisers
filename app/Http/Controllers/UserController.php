@@ -134,7 +134,8 @@ class UserController extends Controller
             'user_profiles.post_count',
             'user_profiles.follower_count',
             'user_profiles.following_count',
-            'users.status'
+            'users.status',
+            'users.role',
         )
             ->leftJoin('users', 'user_profiles.user_id', '=', 'users.id')
             ->get();
