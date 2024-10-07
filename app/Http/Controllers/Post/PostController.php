@@ -188,10 +188,9 @@ class PostController extends Controller
             $username = User::find($post->user_id)->username;
             $postId = $post->id;
 
-            // Path to the video folder and files
-            $videoDirectory = "public/{$username}/post/{$postId}/video";
-            $videoPath = "{$videoDirectory}/{$post->original_file_name}"; // Video file path
-            $thumbnailPath = "{$videoDirectory}/thumbnail/{$postId}.jpg"; // Thumbnail path
+            // Paths to the video file and thumbnail
+            $videoPath = "public/{$username}/post/{$postId}/video/{$post->original_file_name}"; // Video file path
+            $thumbnailPath = "public/{$username}/post/{$postId}/video/thumbnail/{$postId}.jpg"; // Thumbnail path
 
             // Delete video if exists
             if (Storage::exists($videoPath)) {
@@ -203,11 +202,6 @@ class PostController extends Controller
                 Storage::delete($thumbnailPath);
             }
 
-            // Check if the video directory is empty and delete it
-            if (Storage::exists($videoDirectory) && empty(Storage::files($videoDirectory))) {
-                Storage::deleteDirectory($videoDirectory);
-            }
-
             // Delete the post record from the database
             $post->delete();
 
@@ -215,6 +209,12 @@ class PostController extends Controller
             $userProfile = UserProfile::find($post->user_id);
             if ($userProfile && $userProfile->post_count > 0) {
                 $userProfile->decrement('post_count');
+            }
+
+            // Check if both video and thumbnail are deleted and delete the postId directory
+            $postDirectory = "public/{$username}/post/{$postId}";
+            if (!Storage::exists($videoPath) && !Storage::exists($thumbnailPath) && Storage::exists($postDirectory)) {
+                Storage::deleteDirectory($postDirectory);
             }
 
             // Check if there are any other posts for this user
@@ -235,6 +235,7 @@ class PostController extends Controller
             ], 422);
         }
     }
+
 
 
     public function like(Post $post): \Illuminate\Http\JsonResponse
