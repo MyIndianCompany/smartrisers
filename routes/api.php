@@ -48,6 +48,7 @@ Route::controller(\App\Http\Controllers\UserController::class)->group(function (
             Route::get('{username}', 'userProfile');
             Route::get('post/all', 'getAllUserHasPosts');
             Route::post('profile', 'updateProfile');
+            Route::patch('{user}/role', 'updateRole');
             Route::patch('{user}/status', 'updateStatus');
             Route::patch('private', 'updateUserIsPrivate');
             Route::delete('account', 'deleteAccount');

@@ -212,6 +212,30 @@ class UserController extends Controller
         }
     }
 
+    public function updateRole(Request $request, User $user)
+    {
+        $request->validate([
+            'role' => 'required|string|in:admin,normal'
+        ]);
+        try {
+            DB::beginTransaction();
+            $user->update([
+                'role' => $request->input('role')
+            ]);
+            DB::commit();
+            return response()->json([
+                'message' => 'Role update successfully!',
+            ]);
+        } catch (\Exception $exception) {
+            DB::rollBack();
+            report($exception);
+            return response()->json([
+                'message' => 'Failed to update Role!',
+                'error' => $exception->getMessage()
+            ]);
+        }
+    }
+
     public function getNewUsers(Request $request)
     {
         $currentYear = Carbon::now()->year;
