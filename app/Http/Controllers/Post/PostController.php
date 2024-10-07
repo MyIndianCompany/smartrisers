@@ -120,16 +120,19 @@ class PostController extends Controller
             $postId = $post->id;
             $videoPath = "public/{$username}/post/{$postId}/video/{$originalFileName}";
             Storage::put($videoPath, file_get_contents($uploadedFile->getRealPath()));
-            $videoUrl = config('app.url') . Storage::url($videoPath);
+            // $videoUrl = config('app.url') . Storage::url($videoPath);
+
+            // Force HTTPS for video URL
+            $videoUrl = 'https://' . parse_url(config('app.url'), PHP_URL_HOST) . Storage::url($videoPath);
 
             $thumbnailPath = "public/{$username}/post/{$postId}/video/thumbnail/{$postId}.jpg";
             $thumbnailFullPath = storage_path('app/' . $thumbnailPath);
-            
+
             $thumbnailDirectory = dirname($thumbnailFullPath);
             if (!is_dir($thumbnailDirectory)) {
                 mkdir($thumbnailDirectory, 0755, true);
             }
-            
+
             $ffmpeg = FFMpeg::create([
                 'ffmpeg.binaries'  => '/usr/bin/ffmpeg',
                 'ffprobe.binaries' => '/usr/bin/ffprobe',
@@ -139,12 +142,14 @@ class PostController extends Controller
                 'ffmpeg.threads'   => 12,
             ]);
 
-            
+
             $video = $ffmpeg->open($uploadedFile->getRealPath());
-            
+
             $video->frame(TimeCode::fromSeconds(1))->save($thumbnailFullPath);
-            
-            $thumbnailUrl = config('app.url') . Storage::url($thumbnailPath);
+
+            // $thumbnailUrl = config('app.url') . Storage::url($thumbnailPath);
+            // Force HTTPS for thumbnail URL
+            $thumbnailUrl = 'https://' . parse_url(config('app.url'), PHP_URL_HOST) . Storage::url($thumbnailPath);
 
             $post->update([
                 'file_url' => $videoUrl,
