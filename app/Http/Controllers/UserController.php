@@ -123,7 +123,19 @@ class UserController extends Controller
     {
         // Retrieve only specified fields from the user_profiles table without related data
         $userProfiles = UserProfile::select(
-            'user_profiles.user_id'
+            'user_profiles.user_id',
+            'user_profiles.name',
+            'user_profiles.username',
+            'user_profiles.email',
+            'user_profiles.bio',
+            'user_profiles.gender',
+            'user_profiles.custom_gender',
+            'user_profiles.profile_picture',
+            'user_profiles.post_count',
+            'user_profiles.follower_count',
+            'user_profiles.following_count',
+            'users.status',
+            'users.role',
         )
             ->leftJoin('users', 'user_profiles.user_id', '=', 'users.id')
             ->get();
@@ -142,7 +154,8 @@ class UserController extends Controller
                 'post_count' => $profile->post_count,
                 'follower_count' => $profile->follower_count,
                 'following_count' => $profile->following_count,
-                'status' => $profile->status
+                'status' => $profile->status,
+                'role' => $profile->role
             ];
         });
 
