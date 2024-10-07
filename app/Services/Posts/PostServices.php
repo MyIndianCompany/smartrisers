@@ -66,6 +66,7 @@ class PostServices
                 'user_id',
                 'caption',
                 'file_url',
+                'thumbnail_url',
                 'like_count',
                 'comment_count',
                 'created_at'
