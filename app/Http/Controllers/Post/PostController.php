@@ -178,24 +178,55 @@ class PostController extends Controller
     {
         try {
             $user = auth()->user();
+
+            // Check authorization
             if ($post->user_id !== $user->id && $user->role !== 'admin') {
                 return response()->json(['message' => 'You are not authorized to delete this post.'], 403);
             }
 
-            $videoPath = str_replace(config('app.url') . '/storage', 'public', $post->file_url);
+            // Get the username and paths
+            $username = User::find($post->user_id)->username;
+            $postId = $post->id;
+
+            // Path to the video folder and files
+            $videoDirectory = "public/{$username}/post/{$postId}/video";
+            $videoPath = "{$videoDirectory}/{$post->original_file_name}"; // Video file path
+            $thumbnailPath = "{$videoDirectory}/thumbnail/{$postId}.jpg"; // Thumbnail path
+
+            // Delete video if exists
             if (Storage::exists($videoPath)) {
                 Storage::delete($videoPath);
             }
-            $thumbnailPath = str_replace(config('app.url') . '/storage', 'public', $post->thumbnail_url);
+
+            // Delete thumbnail if exists
             if (Storage::exists($thumbnailPath)) {
                 Storage::delete($thumbnailPath);
             }
+
+            // Check if the video directory is empty and delete it
+            if (Storage::exists($videoDirectory) && empty(Storage::files($videoDirectory))) {
+                Storage::deleteDirectory($videoDirectory);
+            }
+
+            // Delete the post record from the database
             $post->delete();
+
+            // Decrement post count in user profile
             $userProfile = UserProfile::find($post->user_id);
             if ($userProfile && $userProfile->post_count > 0) {
                 $userProfile->decrement('post_count');
             }
-            return response()->json(['success' => 'Post deleted successfully.'], 200);
+
+            // Check if there are any other posts for this user
+            $remainingPosts = Post::where('user_id', $post->user_id)->count();
+
+            // If no posts remain, delete the entire user folder (username folder)
+            $userDirectory = "public/{$username}";
+            if ($remainingPosts == 0 && Storage::exists($userDirectory)) {
+                Storage::deleteDirectory($userDirectory);
+            }
+
+            return response()->json(['success' => 'Post and associated media deleted successfully.'], 200);
         } catch (\Exception $exception) {
             report($exception);
             return response()->json([
@@ -204,6 +235,7 @@ class PostController extends Controller
             ], 422);
         }
     }
+
 
     public function like(Post $post): \Illuminate\Http\JsonResponse
     {
