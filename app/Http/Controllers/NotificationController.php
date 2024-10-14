@@ -12,34 +12,32 @@ class NotificationController extends Controller
 {
     public function index(Request $request)
     {
-        // Fetch notifications for the authenticated user
         $notifications = Notification::where('user_id', $request->user()->id)->get();
 
         $notificationsData = $notifications->map(function($notification) {
-            // Decode JSON data only if it's a string
             $data = is_string($notification->data) ? json_decode($notification->data, true) : $notification->data;
 
-            // Initialize additional fields to null
             $postVideoUrl = null;
+            $postThumbnailUrl = null;
             $likedByProfilePicture = null;
-            $likedByUsername = null; //username
-            $likedByUserName = null; // Name of the user
+            $likedByUsername = null;
+            $likedByUserName = null;
 
             if (isset($data['post_id'])) {
-                // Fetch post details
                 $post = Post::find($data['post_id']);
-                $postVideoUrl = $post ? $post->file_url : null;
+
+                if ($post) {
+                    $postVideoUrl = $post->file_url;
+                    $postThumbnailUrl = $post->thumbnail_url;
+                }
             }
 
             if (isset($data['liked_by'])) {
-                // Fetch user profile picture
                 $user = User::with('profile')->find($data['liked_by']);
                 $likedByProfilePicture = $user && $user->profile ? $user->profile->profile_picture : null;
                 $likedByUsername = $user && $user->profile ? $user->profile->username : null;
                 $likedByUserName = $user && $user->profile ? $user->profile->name : null;
             }
-
-            Log::info('Notification Data:', $data);
 
             return [
                 'liked_by' => $data['liked_by'] ?? null,
@@ -48,6 +46,7 @@ class NotificationController extends Controller
                 'username' => $likedByUsername,
                 'liked_by_profile_picture' => $likedByProfilePicture,
                 'post_video_url' => $postVideoUrl,
+                'post_thumbnail_url' => $postThumbnailUrl,
                 'type' => $notification->type,
                 'created_at' => $notification->created_at,
             ];
