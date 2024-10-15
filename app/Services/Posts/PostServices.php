@@ -20,9 +20,9 @@ use Illuminate\Support\Facades\Log;
 
 class PostServices
 {
-    public function getPostsQuery(): \Illuminate\Database\Eloquent\Builder
+    public function getPostsQuery($authUserId = null): \Illuminate\Database\Eloquent\Builder
     {
-        $authUserId = auth()->id();
+        $authUserId = $authUserId ?? auth()->id();
 
         return Post::whereHas('user', function ($query) {
             $query->where('status', 'active')
@@ -30,36 +30,46 @@ class PostServices
                     $query->where('is_private', false);
                 });
         })
-            // ->orWhere(function ($query) use ($authUserId) {
-            //     $query->whereHas('user.followers', function ($query) use ($authUserId) {
-            //         $query->where('follower_user_id', $authUserId);
-            //     });
-            // })
             ->with([
                 'user' => function ($query) {
                     $query->select('id', 'name', 'username', 'profile_picture');
                 },
-                'comments' => function ($query) {
+                'comments' => function ($query) use ($authUserId) {
                     $query->whereNull('super_comment_id')
                         ->with([
                             'user' => function ($query) {
                                 $query->select('id', 'name', 'username', 'profile_picture');
                             },
-                            'replies' => function ($query) {
+                            'likes' => function ($query) use ($authUserId) {
+                                if ($authUserId) {
+                                    $query->where('user_id', $authUserId);
+                                }
+                            },
+                            'replies' => function ($query) use ($authUserId) {
                                 $query->with([
                                     'user' => function ($query) {
                                         $query->select('id', 'name', 'username', 'profile_picture');
                                     },
-                                    'replies' => function ($query) {
+                                    'likes' => function ($query) use ($authUserId) {
+                                        if ($authUserId) {
+                                            $query->where('user_id', $authUserId);
+                                        }
+                                    },
+                                    'replies' => function ($query) use ($authUserId) {
                                         $query->with([
                                             'user' => function ($query) {
                                                 $query->select('id', 'name', 'username', 'profile_picture');
+                                            },
+                                            'likes' => function ($query) use ($authUserId) {
+                                                if ($authUserId) {
+                                                    $query->where('user_id', $authUserId);
+                                                }
                                             }
-                                        ])->limit(5); // Limit number of nested replies fetched
+                                        ])->limit(5);
                                     }
-                                ])->limit(5); // Limit number of nested replies fetched
+                                ])->limit(5);
                             }
-                        ])->limit(10); // Limit number of comments fetched
+                        ])->limit(10);
                 }
             ])->select(
                 'id',

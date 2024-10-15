@@ -70,7 +70,9 @@ class PostController extends Controller
         $blockedByUserIds = UserBlock::where('blocked_id', $authUserId)->pluck('blocker_id')->toArray();
         $excludedUserIds = array_merge($blockedUserIds, $blockedByUserIds);
         $followedUserIds = Follower::where('follower_user_id', $authUserId)->pluck('following_user_id')->toArray();
-        $posts = $this->postServices->getPostsQuery()->whereNotIn('user_id', $excludedUserIds)->get();
+
+        $posts = $this->postServices->getPostsQuery($authUserId)->whereNotIn('user_id', $excludedUserIds)->get();
+
         $posts->each(function ($post) use ($authUserId, $followedUserIds) {
             $post->comment_count = $post->comments->count();
             $post->reply_count = $post->comments->flatMap->replies->count();
@@ -78,6 +80,19 @@ class PostController extends Controller
             $post->liked = $post->likes->contains('user_id', $authUserId);
             $post->followed = in_array($post->user->id, $followedUserIds);
             $post->is_owner = $post->user->id === $authUserId;
+
+            $post->comments->each(function ($comment) use ($authUserId) {
+                $comment->liked = $authUserId ? $comment->likes->contains('user_id', $authUserId) : false;
+    
+                $comment->replies->each(function ($reply) use ($authUserId) {
+                    $reply->liked = $authUserId ? $reply->likes->contains('user_id', $authUserId) : false;
+    
+                    $reply->replies->each(function ($nestedReply) use ($authUserId) {
+                        $nestedReply->liked = $authUserId ? $nestedReply->likes->contains('user_id', $authUserId) : false;
+                    });
+                });
+            });
+
             unset($post->likes);
         });
         return response()->json($posts, 201);
