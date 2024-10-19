@@ -66,10 +66,10 @@ Route::controller(\App\Http\Controllers\Post\PostController::class)->group(funct
             Route::get('{id}', 'show');
             Route::post('upload', 'store');
             Route::post('{post}/like', 'like');
-            Route::post('{post}/comment', 'comment');
-            Route::post('comment/{postComment}/like', 'commentLike');
-            Route::post('{post}/comment/{comment}/reply', 'reply');
-            Route::delete('comment/{comment}', 'deleteComment');
+            // Route::post('{post}/comment', 'comment');
+            // Route::post('comment/{postComment}/like', 'commentLike');
+            // Route::post('{post}/comment/{comment}/reply', 'reply');
+            // Route::delete('comment/{comment}', 'deleteComment');
             Route::delete('{post}', 'destroy');
         });
         Route::get('{username}/user', 'getPostsByUsername');

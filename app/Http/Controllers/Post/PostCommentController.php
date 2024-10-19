@@ -44,8 +44,8 @@ class PostCommentController extends Controller
     {
         try {
             $user = Auth::user();
-            $message = $this->postServices->likePostComment($postComment);
-            return response()->json(['message' => $message], 201);
+            [$message, $likeCount] = $this->postServices->likePostComment($postComment);
+            return response()->json(['message' => $message, 'total_likes' => $likeCount], 201);
         } catch (\Exception $exception) {
             report($exception);
             return response()->json([
@@ -61,8 +61,8 @@ class PostCommentController extends Controller
             'comment' => 'required|string|max:255',
         ]);
         try {
-            $this->postServices->addReply($post, $comment, $request->input('comment'));
-            return response()->json(['message' => 'Comment reply added successfully.'], 201);
+            $reply = $this->postServices->addReply($post, $comment, $request->input('comment'));
+            return response()->json(['message' => 'Comment reply added successfully.', 'reply' => $reply->comment], 201);
         } catch (\Exception $exception) {
             report($exception);
             return response()->json([

@@ -232,8 +232,9 @@ class PostServices
             $like = $user->commentLikes()->where('comment_id', $postComment->id)->first();
             $like ? $like->delete() : $user->commentLikes()->create(['comment_id' => $postComment->id]);
             $postComment->update(['comment_like_count' => $postComment->likes()->count()]);
+            $likeCount = $postComment->likes()->count();
             DB::commit();
-            return $like ? 'Post Comment unliked successfully.' : 'Post Comment liked successfully.';
+            return [$like ? 'Post Comment unliked successfully.' : 'Post Comment liked successfully.', $likeCount];
         } catch (\Exception $exception) {
             DB::rollBack();
             report($exception);
