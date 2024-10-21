@@ -3,15 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Notification;
-use App\Models\Post;
 use App\Models\User;
 use App\Services\Posts\PostServices;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class NotificationController extends Controller
 {
-    protected PostServices $postServices;
     public function index(Request $request)
     {
         $notifications = Notification::where('user_id', $request->user()->id)->get();
@@ -19,9 +16,9 @@ class NotificationController extends Controller
         $notificationsData = $notifications->map(function($notification) use ($request) {
             $data = is_string($notification->data) ? json_decode($notification->data, true) : $notification->data;
 
-            $postVideoUrl = null;
+            // $postVideoUrl = null;
             $postData = null;
-            $postThumbnailUrl = null;
+            // $postThumbnailUrl = null;
             $likedByProfilePicture = null;
             $likedByUsername = null;
             $likedByUserName = null;
