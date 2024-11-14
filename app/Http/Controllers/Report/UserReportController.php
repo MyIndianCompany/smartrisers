@@ -63,7 +63,7 @@ class UserReportController extends Controller
             if ($request->hasFile('files')) {
                 foreach ($request->file('files') as $file) {
                     $filePath = $file->store('user_reports', 'public');;
-                    $url = $$url = Storage::disk('public')->url($filePath);
+                    $url = Storage::disk('public')->url($filePath);
                     UserReportFile::create([
                         'user_report_id' => $userReport->id,
                         'original_file_name' => $file->getClientOriginalName(),
