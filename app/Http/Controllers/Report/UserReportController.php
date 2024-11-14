@@ -8,6 +8,7 @@ use App\Models\UserReportFile;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary as CloudinaryLabs;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class UserReportController extends Controller
 {
@@ -61,9 +62,8 @@ class UserReportController extends Controller
             ]);
             if ($request->hasFile('files')) {
                 foreach ($request->file('files') as $file) {
-                    $filePath = $file->getRealPath();
-                    $uploadResult = CloudinaryLabs::upload($filePath)->getSecurePath();
-                    $url = $uploadResult;
+                    $filePath = $file->store('user_reports', 'public');;
+                    $url = $$url = Storage::disk('public')->url($filePath);
                     UserReportFile::create([
                         'user_report_id' => $userReport->id,
                         'original_file_name' => $file->getClientOriginalName(),
